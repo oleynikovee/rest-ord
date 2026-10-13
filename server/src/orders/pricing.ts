@@ -1,0 +1,78 @@
+import type {
+  MenuChangeIssue,
+  MenuItem,
+  NewOrder,
+  OrderLine,
+} from '../domain/models.js';
+
+export interface RequestedLine {
+  itemId: string;
+  quantity: number;
+  /** For regular items: the price the user saw. For open-price items: the price they entered. */
+  unitPrice: number;
+  /** Whether the user saw the item as open-price. */
+  openPrice: boolean;
+}
+
+export type PricingResult =
+  | { ok: true; order: NewOrder }
+  | { ok: false; reason: 'menu_changed'; issues: MenuChangeIssue[] }
+  | { ok: false; reason: 'discount_too_large'; subtotal: number }
+  | { ok: false; reason: 'invalid_open_price'; itemId: string };
+
+/**
+ * Prices an order against the current menu. Every difference between what the
+ * user saw and the current menu is reported, so nothing changes behind their back.
+ */
+export function priceOrder(
+  lines: RequestedLine[],
+  discount: number,
+  menu: Map<string, MenuItem>,
+): PricingResult {
+  const issues: MenuChangeIssue[] = [];
+  const orderLines: OrderLine[] = [];
+
+  for (const line of lines) {
+    const item = menu.get(line.itemId);
+    if (!item) {
+      issues.push({ itemId: line.itemId, kind: 'removed' });
+      continue;
+    }
+    if (!item.available) {
+      issues.push({ itemId: item.id, kind: 'unavailable', item });
+      continue;
+    }
+    if (item.openPrice !== line.openPrice) {
+      issues.push({ itemId: item.id, kind: 'open_price_changed', item });
+      continue;
+    }
+    if (item.openPrice && line.unitPrice <= 0) {
+      return { ok: false, reason: 'invalid_open_price', itemId: item.id };
+    }
+    if (!item.openPrice && item.price !== line.unitPrice) {
+      issues.push({ itemId: item.id, kind: 'price_changed', item });
+      continue;
+    }
+
+    orderLines.push({
+      itemId: item.id,
+      name: item.name,
+      unitPrice: line.unitPrice,
+      quantity: line.quantity,
+      openPrice: item.openPrice,
+      lineTotal: line.unitPrice * line.quantity,
+    });
+  }
+
+  if (issues.length > 0) return { ok: false, reason: 'menu_changed', issues };
+
+  const subtotal = orderLines.reduce((sum, l) => sum + l.lineTotal, 0);
+  if (discount > subtotal) {
+    return { ok: false, reason: 'discount_too_large', subtotal };
+  }
+
+  return {
+    ok: true,
+    order: { lines: orderLines, subtotal, discount, total: subtotal - discount },
+  };
+}
