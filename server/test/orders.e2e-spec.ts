@@ -30,7 +30,7 @@ describe('Menu and orders (e2e, in-memory storage)', () => {
     await app.close();
   });
 
-  const placeOrder = (key: string, unitPrice = item.price!) =>
+  const placeOrder = (key: string, unitPrice = item.price!): request.Test =>
     request(app.getHttpServer())
       .post('/api/orders')
       .set('Idempotency-Key', key)

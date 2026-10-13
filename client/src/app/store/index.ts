@@ -1,3 +1,4 @@
+import type { EnvironmentProviders } from '@angular/core';
 import { provideEffects } from '@ngrx/effects';
 import { provideStore } from '@ngrx/store';
 import * as cartEffects from './cart/cart.effects';
@@ -9,7 +10,7 @@ import { menuFeature } from './menu/menu.reducer';
 import * as ordersEffects from './orders/orders.effects';
 import { ordersFeature } from './orders/orders.reducer';
 
-export function provideAppStore() {
+export function provideAppStore(): EnvironmentProviders[] {
   return [
     provideStore(
       {

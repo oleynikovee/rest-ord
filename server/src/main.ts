@@ -4,7 +4,7 @@ import { AppModule } from './app.module.js';
 import { configureApp } from './app.setup.js';
 import { loadConfig } from './config.js';
 
-async function bootstrap() {
+async function bootstrap(): Promise<void> {
   const config = loadConfig();
   const app = await NestFactory.create(AppModule.forRoot(config));
   app.use(compression());

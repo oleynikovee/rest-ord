@@ -134,7 +134,7 @@ export class MenuService {
   }
 }
 
-const categoryNotFound = () =>
+const categoryNotFound = (): NotFoundException =>
   new NotFoundException({ code: 'CATEGORY_NOT_FOUND', message: 'Category not found.' });
-const itemNotFound = () =>
+const itemNotFound = (): NotFoundException =>
   new NotFoundException({ code: 'ITEM_NOT_FOUND', message: 'Menu item not found.' });

@@ -1,4 +1,4 @@
-import { createFeature, createReducer, on } from '@ngrx/store';
+import { type ActionReducer, createFeature, createReducer, on } from '@ngrx/store';
 import type { ApiError } from '../../core/api-error';
 import type { Cents } from '../../core/models';
 import { CartActions } from './cart.actions';
@@ -42,10 +42,14 @@ export function loadPersistedCart(): CartState {
   }
 }
 
-const clamp = (quantity: number) => Math.max(0, Math.min(MAX_QUANTITY, Math.floor(quantity)));
+const clamp = (quantity: number): number => Math.max(0, Math.min(MAX_QUANTITY, Math.floor(quantity)));
 
 /** Any edit invalidates the pending checkout key: a different cart is a different order. */
-const edited = (state: CartState, lines: CartLine[], discount = state.discount): CartState => ({
+const edited = (
+  state: CartState,
+  lines: CartLine[],
+  discount = state.discount,
+): CartState => ({
   ...state,
   lines,
   discount,
@@ -53,7 +57,7 @@ const edited = (state: CartState, lines: CartLine[], discount = state.discount):
   error: null,
 });
 
-export const createCartReducer = (initialState: CartState) =>
+export const createCartReducer = (initialState: CartState): ActionReducer<CartState> =>
   createReducer(
     initialState,
     on(CartActions.addItem, (state, { item, quantity, unitPrice }) => {

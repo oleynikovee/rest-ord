@@ -108,7 +108,9 @@ export class MenuPage {
 
   protected readonly skeletonRows = Array.from({ length: 12 }, (_, i) => i);
 
-  protected trackRow = (_: number, row: Row) => row.id;
+  protected trackRow(_: number, row: Row): string {
+    return row.id;
+  }
 
   protected retry(): void {
     this.store.dispatch(MenuActions.load());

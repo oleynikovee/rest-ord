@@ -19,7 +19,7 @@ const initialState: OrdersState = adapter.getInitialState({
   error: null,
 });
 
-const isNewer = (state: OrdersState, order: Order) => {
+const isNewer = (state: OrdersState, order: Order): boolean => {
   const current = state.entities[order.id];
   return !current || current.updatedAt <= order.updatedAt;
 };

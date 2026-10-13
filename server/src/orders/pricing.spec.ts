@@ -13,7 +13,7 @@ const item = (patch: Partial<MenuItem> = {}): MenuItem => ({
   ...patch,
 });
 
-const menuOf = (...items: MenuItem[]) => new Map(items.map((i) => [i.id, i]));
+const menuOf = (...items: MenuItem[]): Map<string, MenuItem> => new Map(items.map((i) => [i.id, i]));
 
 describe('priceOrder', () => {
   it('computes subtotal, discount and total', () => {

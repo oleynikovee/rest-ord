@@ -15,6 +15,23 @@ module.exports = defineConfig([
     ],
     processor: angular.processInlineTemplates,
     rules: {
+      // TypeScript style guide: explicit return types (inline callbacks are inferred from context).
+      '@typescript-eslint/explicit-function-return-type': [
+        'error',
+        {
+          allowExpressions: true,
+          allowTypedFunctionExpressions: true,
+          allowHigherOrderFunctions: true,
+        },
+      ],
+      // TypeScript style guide: no arrow functions as class methods.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'PropertyDefinition > ArrowFunctionExpression',
+          message: 'Use a class method instead of an arrow function property.',
+        },
+      ],
       '@angular-eslint/directive-selector': [
         'error',
         {

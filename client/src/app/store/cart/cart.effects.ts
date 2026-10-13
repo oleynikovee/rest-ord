@@ -30,7 +30,11 @@ import { CART_STORAGE_KEY, cartFeature } from './cart.reducer';
  * idempotency key makes automatic retries after network errors safe.
  */
 export const checkout = createEffect(
-  (actions$ = inject(Actions), store = inject(Store), api = inject(ApiService)) =>
+  (
+    actions$ = inject(Actions),
+    store = inject(Store),
+    api = inject(ApiService),
+  ) =>
     actions$.pipe(
       ofType(CartActions.checkout),
       concatLatestFrom(() => store.select(cartFeature.selectCartState)),
@@ -82,7 +86,11 @@ export const syncMenuFromCheckoutIssues = createEffect(
 );
 
 export const notifyCheckoutSuccess = createEffect(
-  (actions$ = inject(Actions), notify = inject(NotifyService), router = inject(Router)) =>
+  (
+    actions$ = inject(Actions),
+    notify = inject(NotifyService),
+    router = inject(Router),
+  ) =>
     actions$.pipe(
       ofType(CartActions.checkoutSuccess),
       // switchMap: the previous snack bar is replaced, so its action stream is dropped too.

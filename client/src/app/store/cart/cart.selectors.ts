@@ -9,7 +9,11 @@ export const selectCartLines = createSelector(
   cartFeature.selectLines,
   selectItemEntities,
   menuFeature.selectLoaded,
-  (lines, items, menuLoaded): CartLineView[] =>
+  (
+    lines,
+    items,
+    menuLoaded,
+  ): CartLineView[] =>
     lines.map((line) => {
       const item = items[line.itemId];
       return {
@@ -52,7 +56,13 @@ export const selectCanCheckout = createSelector(
   selectDiscountTooLarge,
   cartFeature.selectSubmitting,
   menuFeature.selectLoaded,
-  (lines, problems, discountTooLarge, submitting, menuLoaded) =>
+  (
+    lines,
+    problems,
+    discountTooLarge,
+    submitting,
+    menuLoaded,
+  ) =>
     menuLoaded && lines.length > 0 && problems.length === 0 && !discountTooLarge && !submitting,
 );
 

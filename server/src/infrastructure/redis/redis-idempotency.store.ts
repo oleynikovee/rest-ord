@@ -6,7 +6,7 @@ import {
 
 const TTL_SECONDS = 24 * 60 * 60;
 const PENDING = '__pending__';
-const keyOf = (key: string) => `idempotency:order:${key}`;
+const keyOf = (key: string): string => `idempotency:order:${key}`;
 
 /**
  * `SET NX` gives an atomic lock across all API instances: only the first request

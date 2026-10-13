@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { type Observable, retry, timer } from 'rxjs';
+import { type MonoTypeOperatorFunction, type Observable, retry, timer } from 'rxjs';
 import type {
   Category,
   CreateOrderRequest,
@@ -11,7 +11,7 @@ import type {
 } from './models';
 
 /** Retries idempotent GETs on network / gateway errors with exponential backoff. */
-const retryReads = <T>() =>
+const retryReads = <T>(): MonoTypeOperatorFunction<T> =>
   retry<T>({
     count: 3,
     delay: (error: { status?: number }, attempt) => {

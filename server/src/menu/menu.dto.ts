@@ -13,7 +13,7 @@ import {
 
 export const MAX_PRICE = 1_000_000; // 10 000.00
 
-const trim = ({ value }: { value: unknown }) =>
+const trim = ({ value }: { value: unknown }): unknown =>
   typeof value === 'string' ? value.trim() : value;
 
 export class CategoryDto {
