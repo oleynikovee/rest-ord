@@ -1,6 +1,6 @@
-import { Body, Controller, Get, HttpCode, Inject, Post, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Post, Req, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import type { CookieOptions, Response } from 'express';
+import type { CookieOptions, Request, Response } from 'express';
 import { APP_CONFIG, type AppConfig } from '../config.js';
 import type { User } from '../domain/models.js';
 import { CurrentUser, Public } from './auth.decorators.js';
@@ -27,10 +27,11 @@ export class AuthController {
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   async login(
     @Body() dto: LoginDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ user: User }> {
     const user = await this.auth.login(dto.email, dto.password);
-    await this.startSession(user, res);
+    await this.startSession(user, req, res);
     return { user };
   }
 
@@ -38,23 +39,31 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   async register(
     @Body() dto: RegisterDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ user: User }> {
     const user = await this.auth.register(dto.email, dto.name, dto.password);
-    await this.startSession(user, res);
+    await this.startSession(user, req, res);
     return { user };
   }
 
   @Post('logout')
   @HttpCode(204)
-  logout(@Res({ passthrough: true }) res: Response): void {
-    res.clearCookie(SESSION_COOKIE, this.cookieOptions());
+  logout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): void {
+    res.clearCookie(SESSION_COOKIE, this.cookieOptions(req));
   }
 
-  private async startSession(user: User, res: Response): Promise<void> {
+  private async startSession(
+    user: User,
+    req: Request,
+    res: Response,
+  ): Promise<void> {
     const token = await this.auth.issueToken(user);
     res.cookie(SESSION_COOKIE, token, {
-      ...this.cookieOptions(),
+      ...this.cookieOptions(req),
       maxAge: this.config.auth.sessionTtlSeconds * 1000,
     });
   }
@@ -63,11 +72,12 @@ export class AuthController {
    * httpOnly: scripts cannot read the token (XSS). SameSite=Strict: the browser does not
    * send it with cross-site requests, which protects the cookie-authenticated API from CSRF.
    */
-  private cookieOptions(): CookieOptions {
+  private cookieOptions(req: Request): CookieOptions {
     return {
       httpOnly: true,
       sameSite: 'strict',
-      secure: this.config.auth.cookieSecure,
+      // Over HTTPS (directly or via the trusted proxy) the cookie is never sent in clear text.
+      secure: this.config.auth.cookieSecure || req.secure,
       path: '/',
     };
   }

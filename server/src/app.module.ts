@@ -3,13 +3,13 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
 import { LoggerModule } from 'nestjs-pino';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule, type ThrottlerStorage } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module.js';
 import type { AppConfig } from './config.js';
 import { EventsModule } from './events/events.module.js';
 import { ConfigController } from './health/config.controller.js';
 import { HealthController } from './health/health.controller.js';
-import { InfrastructureModule } from './infrastructure/infrastructure.module.js';
+import { InfrastructureModule, RATE_LIMIT_STORAGE } from './infrastructure/infrastructure.module.js';
 import { MenuModule } from './menu/menu.module.js';
 import { loggingParams } from './observability/logging.js';
 import { ObservabilityModule } from './observability/observability.module.js';
@@ -27,7 +27,13 @@ export class AppModule {
         LoggerModule.forRoot(loggingParams()),
         InfrastructureModule.forRoot(config),
         ObservabilityModule,
-        ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 300 }]),
+        ThrottlerModule.forRootAsync({
+          inject: [RATE_LIMIT_STORAGE],
+          useFactory: (storage: ThrottlerStorage | null) => ({
+            throttlers: [{ name: 'default', ttl: 60_000, limit: 300 }],
+            storage: storage ?? undefined,
+          }),
+        }),
         AuthModule,
         MenuModule,
         OrdersModule,

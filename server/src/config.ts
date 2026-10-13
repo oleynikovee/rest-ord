@@ -9,6 +9,8 @@ export interface AppConfig {
   /** Built Angular app to serve as static files (production / Docker). */
   clientDist?: string;
   auth: AuthConfig;
+  /** Express `trust proxy`: number of proxies in front of the app (0 when exposed directly). */
+  trustProxy: number;
   /** Internal port for Prometheus `/metrics`; 0 disables it. */
   metricsPort: number;
   /** Values the browser app needs at runtime (served by GET /api/config). */
@@ -26,7 +28,7 @@ export interface AuthConfig {
   /** Signs session tokens. Generated per process when not set (development only). */
   jwtSecret?: string;
   sessionTtlSeconds: number;
-  /** `Secure` cookie flag: enable whenever the app is served over HTTPS. */
+  /** Force the `Secure` cookie flag; otherwise it follows the request protocol (HTTPS => Secure). */
   cookieSecure: boolean;
   adminEmail: string;
   adminPassword: string;
@@ -41,6 +43,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     redisUrl: env.REDIS_URL || undefined,
     statusStepMs: Number(env.STATUS_STEP_SECONDS ?? 8) * 1000,
     clientDist: env.CLIENT_DIST || undefined,
+    trustProxy: Number(env.TRUST_PROXY ?? 0),
     metricsPort: Number(env.METRICS_PORT ?? 9464),
     client: {
       sentryDsn: env.SENTRY_DSN_CLIENT || null,

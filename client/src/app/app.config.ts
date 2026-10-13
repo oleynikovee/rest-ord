@@ -5,11 +5,14 @@ import {
   inject,
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
+  isDevMode,
   provideZonelessChangeDetection,
 } from '@angular/core';
 import { MatIconRegistry } from '@angular/material/icon';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { provideServiceWorker } from '@angular/service-worker';
 import { routes } from './app.routes';
+import { AppUpdates } from './core/app-updates';
 import { authInterceptor } from './core/auth.interceptor';
 import { ErrorReporter, ReportingErrorHandler } from './core/error-reporter';
 import { provideAppStore } from './store';
@@ -27,6 +30,12 @@ export const appConfig: ApplicationConfig = {
       inject(MatIconRegistry).setDefaultFontSetClass('material-symbols-outlined');
       // Not awaited: error reporting must not delay the first render.
       void inject(ErrorReporter).init();
+      inject(AppUpdates).watch();
+    }),
+    // Offline app shell and cached menu (see ngsw-config.json); production builds only.
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000',
     }),
   ],
 };

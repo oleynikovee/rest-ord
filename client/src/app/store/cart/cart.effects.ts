@@ -7,10 +7,12 @@ import {
   distinctUntilChanged,
   exhaustMap,
   from,
+  fromEvent,
   map,
   of,
   retry,
   switchMap,
+  take,
   tap,
   throwError,
   timer,
@@ -54,7 +56,10 @@ export const checkout = createEffect(
             delay: (error: unknown, attempt) => {
               const apiError = toApiError(error);
               const retryable = isTransient(apiError) || apiError.code === 'ORDER_IN_PROGRESS';
-              return retryable ? timer(1000 * 2 ** (attempt - 1)) : throwError(() => error);
+              if (!retryable) return throwError(() => error);
+              // Offline: wait for the network instead of burning retries. Safe to resend:
+              // the same idempotency key can never create a second order.
+              return navigator.onLine ? timer(1000 * 2 ** (attempt - 1)) : fromEvent(window, 'online').pipe(take(1));
             },
           }),
           map((order) => CartActions.checkoutSuccess({ order })),

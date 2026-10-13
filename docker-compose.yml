@@ -1,4 +1,4 @@
-# One command: docker compose up --build  →  http://localhost:8080
+# One command: docker compose up --build  →  http://localhost:8080 (or https://localhost:8443, HTTP/2)
 services:
   postgres:
     image: postgres:16-alpine
@@ -26,8 +26,14 @@ services:
     networks: [backend]
 
   app:
-    build: .
+    build:
+      context: .
+      target: app
+    # Two instances behind the edge: shared state lives in Postgres/Redis.
+    deploy:
+      replicas: 2
     environment:
+      TRUST_PROXY: 1
       DATABASE_URL: postgres://restaurant:restaurant@postgres:5432/restaurant
       REDIS_URL: redis://redis:6379
       STATUS_STEP_SECONDS: 8
@@ -35,8 +41,6 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production-please}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@trattoria.local}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin12345}
-    ports:
-      - '8080:3000'
     depends_on:
       postgres:
         condition: service_healthy
@@ -44,6 +48,22 @@ services:
         condition: service_healthy
     restart: unless-stopped
     networks: [backend, frontend]
+
+  edge:
+    build:
+      context: .
+      target: edge
+    ports:
+      - '8080:8080'
+      - '8443:8443'
+      - '8443:8443/udp'
+    volumes:
+      - caddy-data:/data
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [frontend]
 
 networks:
   # Databases are reachable only from the app, never from the host or the internet.
@@ -53,3 +73,4 @@ networks:
 
 volumes:
   pgdata: {}
+  caddy-data: {}

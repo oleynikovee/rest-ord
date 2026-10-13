@@ -107,6 +107,8 @@ export const browserConnectivity = createEffect(
     typeof window === 'undefined'
       ? of()
       : merge(
+          // Opened while already offline (e.g. from the service worker cache): no event fires.
+          navigator.onLine ? EMPTY : of(ConnectionActions.browserOffline()),
           fromEvent(window, 'online').pipe(map(() => ConnectionActions.browserOnline())),
           fromEvent(window, 'offline').pipe(map(() => ConnectionActions.browserOffline())),
         ),

@@ -1,0 +1,62 @@
+# Edge proxy in front of the API replicas. In production this role is split between
+# a CDN (static files, TLS at the edge) and a load balancer; Caddy plays both here.
+{
+	servers {
+		protocols h1 h2 h3
+	}
+}
+
+(site) {
+	encode zstd gzip
+
+	# API and real-time traffic go to all API replicas (re-resolved from DNS).
+	@backend path /api/* /socket.io/*
+	handle @backend {
+		reverse_proxy {
+			dynamic a {
+				name app
+				port 3000
+				refresh 5s
+			}
+			# Sticky sessions: Socket.IO long-polling must keep hitting the same instance.
+			lb_policy cookie lb
+			lb_try_duration 5s
+			fail_duration 10s
+			header_up X-Request-Id {http.request.header.X-Request-Id}
+		}
+	}
+
+	# Static app: served by the edge, never by the API.
+	handle {
+		root * /srv
+		header {
+			X-Content-Type-Options nosniff
+			Referrer-Policy strict-origin-when-cross-origin
+			Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' ws: wss: https://*.sentry.io https://fonts.googleapis.com https://fonts.gstatic.com; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'"
+			# Default for other files (icons...): a day.
+			?Cache-Control "public, max-age=86400"
+		}
+		# Content-hashed bundles never change: cache for a year (CDN-friendly).
+		@immutable path_regexp \-[A-Za-z0-9_-]{8}\.(js|css)$
+		header @immutable Cache-Control "public, max-age=31536000, immutable"
+		# Entry points must always be revalidated so new releases are picked up.
+		@revalidate path / /index.html /ngsw.json /ngsw-worker.js /safety-worker.js /manifest.webmanifest
+		header @revalidate Cache-Control "no-cache"
+
+		try_files {path} /index.html
+		@spa not file {path}
+		header @spa Cache-Control "no-cache"
+		file_server
+	}
+}
+
+# Plain HTTP/1.1 for convenience.
+:8080 {
+	import site
+}
+
+# HTTPS with HTTP/2 and HTTP/3; the certificate comes from Caddy's local CA.
+https://localhost:8443 {
+	tls internal
+	import site
+}

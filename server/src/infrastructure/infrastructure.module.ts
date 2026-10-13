@@ -36,9 +36,12 @@ import { PgUsersRepository } from './postgres/pg-users.repository.js';
 import { createRedis } from './redis/redis-connection.js';
 import { RedisEventBus } from './redis/redis-event-bus.js';
 import { RedisIdempotencyStore } from './redis/redis-idempotency.store.js';
+import { RedisThrottlerStorage } from './redis/redis-throttler.storage.js';
 import { generateSeedMenu } from './seed.js';
 
 const PG = Symbol('PG');
+/** ThrottlerStorage shared by all instances, or `null` for the in-process default. */
+export const RATE_LIMIT_STORAGE = Symbol('RATE_LIMIT_STORAGE');
 const REDIS = Symbol('REDIS');
 
 interface RedisClients {
@@ -144,6 +147,11 @@ export class InfrastructureModule {
             ? new RedisEventBus(redis.main, redis.subscriber)
             : new MemoryEventBus(),
       },
+      {
+        provide: RATE_LIMIT_STORAGE,
+        inject: [REDIS],
+        useFactory: (redis: RedisClients | null) => (redis ? new RedisThrottlerStorage(redis.main) : null),
+      },
       InfrastructureLifecycle,
     ];
 
@@ -159,6 +167,7 @@ export class InfrastructureModule {
         IdempotencyStore,
         EventBus,
         EventLog,
+        RATE_LIMIT_STORAGE,
       ],
     };
   }
