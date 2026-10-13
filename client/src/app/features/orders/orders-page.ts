@@ -25,6 +25,8 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
     @let _orders = orders();
     @let _error = error();
     @let _isAdmin = isAdmin();
+    @let _nextCursor = nextCursor();
+    @let _loadingMore = loadingMore();
 
     <div class="page">
       <h1>{{ _isAdmin ? 'All orders' : 'My orders' }}</h1>
@@ -69,6 +71,16 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
             <p>No orders yet.</p>
             <a mat-flat-button
                 routerLink="/menu">Go to the menu</a>
+          </div>
+        }
+        @if (_nextCursor !== null) {
+          <div class="more">
+            <button type="button"
+                [disabled]="_loadingMore"
+                (click)="loadMore()"
+                mat-stroked-button>
+              {{ _loadingMore ? 'Loading…' : 'Load older orders' }}
+            </button>
           </div>
         }
       } @else if (_error) {
@@ -119,6 +131,11 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
     h2 {
       margin: 0;
       font: var(--mat-sys-title-medium);
+    }
+    .more {
+      display: flex;
+      justify-content: center;
+      padding: 8px 0 24px;
     }
     .customer {
       font: var(--mat-sys-label-large);
@@ -184,6 +201,8 @@ export class OrdersPage {
   protected readonly loaded = this.store.selectSignal(ordersFeature.selectLoaded);
   protected readonly error = this.store.selectSignal(ordersFeature.selectError);
   protected readonly isAdmin = this.store.selectSignal(authFeature.selectIsAdmin);
+  protected readonly nextCursor = this.store.selectSignal(ordersFeature.selectNextCursor);
+  protected readonly loadingMore = this.store.selectSignal(ordersFeature.selectLoadingMore);
 
   protected label(status: OrderStatus): string {
     return STATUS_LABELS[status];
@@ -191,6 +210,10 @@ export class OrdersPage {
 
   protected progress(status: OrderStatus): number {
     return (ORDER_STATUSES.indexOf(status) / (ORDER_STATUSES.length - 1)) * 100;
+  }
+
+  protected loadMore(): void {
+    this.store.dispatch(OrdersActions.loadMore());
   }
 
   protected retry(): void {

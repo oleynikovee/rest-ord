@@ -4,7 +4,15 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
-import { type Order, type OrderEvent, TOPICS, type User } from '../domain/models.js';
+import {
+  ORDERS_PAGE_SIZE,
+  type Order,
+  type OrderEvent,
+  type OrdersPage,
+  type OrdersQuery,
+  TOPICS,
+  type User,
+} from '../domain/models.js';
 import {
   EventBus,
   IdempotencyStore,
@@ -32,8 +40,16 @@ export class OrdersService {
   ) {}
 
   /** Admins see every order, customers only their own. */
-  list(user: User, limit = 200): Promise<Order[]> {
-    return this.orders.list(limit, user.role === 'admin' ? undefined : user.id);
+  async list(user: User, query: OrdersQuery): Promise<OrdersPage> {
+    const limit = query.limit ?? ORDERS_PAGE_SIZE.default;
+    // One extra row tells whether an older page exists without a COUNT query.
+    const rows = await this.orders.list({
+      limit: limit + 1,
+      userId: user.role === 'admin' ? undefined : user.id,
+      before: query.before,
+    });
+    const items = rows.slice(0, limit);
+    return { items, nextCursor: rows.length > limit ? items[items.length - 1].number : null };
   }
 
   async place(

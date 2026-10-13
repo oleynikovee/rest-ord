@@ -5,7 +5,7 @@ import type {
   OrderLine,
   OrderStatus,
 } from '../../domain/models.js';
-import { OrdersRepository } from '../../domain/ports.js';
+import { type OrdersListQuery, OrdersRepository } from '../../domain/ports.js';
 import type { PgDatabase } from './pg-database.js';
 
 interface OrderRow {
@@ -41,12 +41,14 @@ export class PgOrdersRepository extends OrdersRepository {
     super();
   }
 
-  async list(limit: number, userId?: string): Promise<Order[]> {
+  async list({ limit, userId, before }: OrdersListQuery): Promise<Order[]> {
+    // Keyset pagination on the unique, monotonic order number: stable while new orders arrive.
     const { rows } = await this.db.pool.query<OrderRow>(
       `SELECT * FROM orders
-       WHERE $2::uuid IS NULL OR user_id = $2::uuid
+       WHERE ($2::uuid IS NULL OR user_id = $2::uuid)
+         AND ($3::int IS NULL OR number < $3::int)
        ORDER BY number DESC LIMIT $1`,
-      [limit, userId ?? null],
+      [limit, userId ?? null, before ?? null],
     );
     return rows.map(toOrder);
   }

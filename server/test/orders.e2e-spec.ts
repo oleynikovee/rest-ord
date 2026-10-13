@@ -1,7 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
-import type { MenuItem, MenuSnapshot, Order } from '../src/domain/models.js';
+import type { MenuItem, MenuSnapshot, Order, OrdersPage } from '../src/domain/models.js';
 import { OrderStatusSimulator } from '../src/orders/order-status.simulator.js';
 import { ADMIN, CUSTOMER, createTestApp, signIn } from './helpers.js';
 
@@ -47,7 +47,7 @@ describe('Menu and orders (e2e, in-memory storage)', () => {
     expect((first.body as Order).total).toBe(item.price! * 2 - 100);
 
     const orders = await customer.get('/api/orders').expect(200);
-    expect(orders.body).toHaveLength(1);
+    expect((orders.body as OrdersPage).items).toHaveLength(1);
   });
 
   it('creates a single order for concurrent double submits', async () => {
@@ -58,7 +58,7 @@ describe('Menu and orders (e2e, in-memory storage)', () => {
     responses.forEach((r) => expect([200, 201, 409]).toContain(r.status));
 
     const orders = await customer.get('/api/orders').expect(200);
-    expect(orders.body).toHaveLength(1);
+    expect((orders.body as OrdersPage).items).toHaveLength(1);
   });
 
   it('refuses the order with details when an item became unavailable', async () => {
@@ -111,6 +111,26 @@ describe('Menu and orders (e2e, in-memory storage)', () => {
     await simulator.tick();
 
     const orders = await customer.get('/api/orders').expect(200);
-    expect((orders.body as Order[]).find((o) => o.id === created.id)?.status).toBe('ACCEPTED');
+    expect((orders.body as OrdersPage).items.find((o) => o.id === created.id)?.status).toBe('ACCEPTED');
+  });
+
+  it('pages through orders with a stable cursor', async () => {
+    for (let i = 1; i <= 5; i++) await placeOrder(`page-key-${i}`).expect(201);
+
+    const first = (await customer.get('/api/orders?limit=2').expect(200)).body as OrdersPage;
+    expect(first.items.map((o) => o.number)).toEqual([5, 4]);
+    expect(first.nextCursor).toBe(4);
+
+    // A new order arriving between page loads must not shift the next page.
+    await placeOrder('page-key-6').expect(201);
+
+    const second = (await customer.get(`/api/orders?limit=2&before=${first.nextCursor}`).expect(200)).body as OrdersPage;
+    expect(second.items.map((o) => o.number)).toEqual([3, 2]);
+    const last = (await customer.get(`/api/orders?limit=2&before=${second.nextCursor}`).expect(200)).body as OrdersPage;
+    expect(last).toMatchObject({ nextCursor: null });
+    expect(last.items.map((o) => o.number)).toEqual([1]);
+
+    await customer.get('/api/orders?limit=1000').expect(400);
+    await customer.get('/api/orders?before=abc').expect(400);
   });
 });

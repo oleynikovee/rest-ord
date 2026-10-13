@@ -42,9 +42,18 @@ export abstract class UsersRepository {
   abstract create(user: Omit<UserRecord, 'id'>): Promise<UserRecord | null>;
 }
 
+export interface OrdersListQuery {
+  limit: number;
+  userId?: string;
+  before?: number;
+}
+
 export abstract class OrdersRepository {
-  /** Newest first; only the given user's orders when `userId` is set. */
-  abstract list(limit: number, userId?: string): Promise<Order[]>;
+  /**
+   * Newest first. Only the given user's orders when `userId` is set; only orders
+   * numbered below `before` when it is set (cursor pagination).
+   */
+  abstract list(query: OrdersListQuery): Promise<Order[]>;
   abstract findById(id: string): Promise<Order | null>;
   abstract findByIdempotencyKey(key: string): Promise<Order | null>;
   /** Must be atomic per idempotency key: a duplicate key returns the existing order. */

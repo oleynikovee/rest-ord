@@ -1,15 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import { type NewOrder, nextStatus, type Order } from '../../domain/models.js';
-import { OrdersRepository } from '../../domain/ports.js';
+import { type OrdersListQuery, OrdersRepository } from '../../domain/ports.js';
 
 export class MemoryOrdersRepository extends OrdersRepository {
   private readonly orders = new Map<string, Order>();
   private readonly byKey = new Map<string, string>();
   private sequence = 0;
 
-  async list(limit: number, userId?: string): Promise<Order[]> {
+  async list({ limit, userId, before }: OrdersListQuery): Promise<Order[]> {
     return [...this.orders.values()]
       .filter((order) => userId === undefined || order.userId === userId)
+      .filter((order) => before === undefined || order.number < before)
       .sort((a, b) => b.number - a.number)
       .slice(0, limit)
       .map(clone);

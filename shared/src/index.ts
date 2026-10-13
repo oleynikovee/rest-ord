@@ -16,6 +16,8 @@ import type {
   OrderEventSchema,
   OrderLineSchema,
   OrderSchema,
+  OrdersPageSchema,
+  OrdersQuerySchema,
   RegisterRequestSchema,
   SessionResponseSchema,
   UserSchema,
@@ -33,6 +35,8 @@ export type MenuSnapshot = z.infer<typeof MenuSnapshotSchema>;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export type OrderLine = z.infer<typeof OrderLineSchema>;
 export type Order = z.infer<typeof OrderSchema>;
+export type OrdersPage = z.infer<typeof OrdersPageSchema>;
+export type OrdersQuery = z.infer<typeof OrdersQuerySchema>;
 export type CreateOrderRequest = z.infer<typeof CreateOrderRequestSchema>;
 export type MenuChangeKind = (typeof MENU_CHANGE_KINDS)[number];
 export type MenuChangeIssue = z.infer<typeof MenuChangeIssueSchema>;

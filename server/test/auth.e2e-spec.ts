@@ -1,7 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
-import type { MenuSnapshot, Order } from '../src/domain/models.js';
+import type { MenuSnapshot, Order, OrdersPage } from '../src/domain/models.js';
 import { ADMIN, CUSTOMER, createTestApp, signIn } from './helpers.js';
 
 describe('Authentication and authorization (e2e)', () => {
@@ -115,8 +115,8 @@ describe('Authentication and authorization (e2e)', () => {
     expect(bobOrder.id).not.toBe(aliceOrder.id);
     expect(aliceOrder).toMatchObject({ customerName: 'Alice' });
 
-    const aliceList = (await alice.get('/api/orders').expect(200)).body as Order[];
-    const adminList = (await admin.get('/api/orders').expect(200)).body as Order[];
+    const aliceList = ((await alice.get('/api/orders').expect(200)).body as OrdersPage).items;
+    const adminList = ((await admin.get('/api/orders').expect(200)).body as OrdersPage).items;
     expect(aliceList.map((o) => o.id)).toEqual([aliceOrder.id]);
     expect(adminList.map((o) => o.id).sort()).toEqual([aliceOrder.id, bobOrder.id].sort());
   });

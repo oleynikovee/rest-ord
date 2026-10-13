@@ -5,12 +5,14 @@ import {
   Get,
   Headers,
   Post,
+  Query,
   Res,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { CurrentUser } from '../auth/auth.decorators.js';
-import type { Order, User } from '../domain/models.js';
+import type { Order, OrdersPage, User } from '../domain/models.js';
+import { OrdersQueryDto } from './orders-query.dto.js';
 import { CreateOrderDto } from './orders.dto.js';
 import { OrdersService } from './orders.service.js';
 
@@ -22,8 +24,11 @@ export class OrdersController {
 
   /** Requires a session (global AuthGuard); customers get only their own orders. */
   @Get()
-  list(@CurrentUser() user: User): Promise<Order[]> {
-    return this.orders.list(user);
+  list(
+    @CurrentUser() user: User,
+    @Query() query: OrdersQueryDto,
+  ): Promise<OrdersPage> {
+    return this.orders.list(user, query);
   }
 
   @Post()

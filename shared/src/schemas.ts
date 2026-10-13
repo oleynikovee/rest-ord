@@ -4,7 +4,7 @@
  * All money values are integer minor units (cents).
  */
 import { z } from 'zod';
-import { MENU_CHANGE_KINDS, ORDER_STATUSES, ROLES } from './constants.js';
+import { MENU_CHANGE_KINDS, ORDER_STATUSES, ORDERS_PAGE_SIZE, ROLES } from './constants.js';
 
 const id = z.uuid();
 const cents = z.int().min(0);
@@ -70,6 +70,22 @@ export const OrderSchema = z
     updatedAt: timestamp,
   })
   .meta({ id: 'Order' });
+
+/** Cursor pagination: pass `nextCursor` as `before` to get the next (older) page. */
+export const OrdersPageSchema = z
+  .object({
+    items: z.array(OrderSchema),
+    /** Order number to continue from, `null` when there are no older orders. */
+    nextCursor: z.int().min(1).nullable(),
+  })
+  .meta({ id: 'OrdersPage' });
+
+export const OrdersQuerySchema = z
+  .object({
+    limit: z.coerce.number().int().min(1).max(ORDERS_PAGE_SIZE.max).optional(),
+    before: z.coerce.number().int().min(1).optional(),
+  })
+  .meta({ id: 'OrdersQuery' });
 
 export const CreateOrderRequestSchema = z
   .object({

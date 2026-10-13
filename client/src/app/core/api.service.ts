@@ -10,6 +10,7 @@ import type {
   MenuItemInput,
   MenuSnapshot,
   Order,
+  OrdersPage,
   RegisterRequest,
   SessionResponse,
 } from './models';
@@ -48,8 +49,10 @@ export class ApiService {
     return this.http.get<MenuSnapshot>('/api/menu').pipe(retryReads());
   }
 
-  getOrders(): Observable<Order[]> {
-    return this.http.get<Order[]>('/api/orders').pipe(retryReads());
+  /** `before`: the `nextCursor` of the previous page. */
+  getOrders(before?: number): Observable<OrdersPage> {
+    const params = before === undefined ? undefined : { before };
+    return this.http.get<OrdersPage>('/api/orders', { params }).pipe(retryReads());
   }
 
   placeOrder(request: CreateOrderRequest, idempotencyKey: string): Observable<Order> {
