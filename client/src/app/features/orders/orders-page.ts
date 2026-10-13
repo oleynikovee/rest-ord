@@ -43,7 +43,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
               [attr.aria-label]="'Order ' + order.number + ' progress'"
             />
             <ul class="lines">
-              @for (line of order.lines; track $index) {
+              @for (line of order.lines; track line.itemId + ':' + line.unitPrice) {
                 <li>
                   <span>{{ line.quantity }} × {{ line.name }}</span>
                   <span>{{ line.lineTotal | money }}</span>

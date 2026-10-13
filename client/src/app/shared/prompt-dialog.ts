@@ -4,6 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { invalidSignal } from './form-signals';
 
 export interface PromptData {
   title: string;
@@ -29,16 +30,12 @@ export interface PromptData {
         <mat-form-field appearance="outline">
           <mat-label>{{ data.label }}</mat-label>
           <input matInput [formControl]="control" maxlength="60" cdkFocusInitial />
-          @if (control.invalid && control.touched) {
-            <mat-error>Required, up to 60 characters</mat-error>
-          }
+          <mat-error>Required, up to 60 characters</mat-error>
         </mat-form-field>
       </mat-dialog-content>
       <mat-dialog-actions align="end">
         <button mat-button type="button" mat-dialog-close>Cancel</button>
-        <button mat-flat-button type="submit" [disabled]="control.invalid">
-          {{ data.confirm }}
-        </button>
+        <button mat-flat-button type="submit" [disabled]="invalid()">{{ data.confirm }}</button>
       </mat-dialog-actions>
     </form>
   `,
@@ -56,6 +53,8 @@ export class PromptDialog {
     nonNullable: true,
     validators: [Validators.required, Validators.maxLength(60), Validators.pattern(/\S/)],
   });
+
+  protected readonly invalid = invalidSignal(this.control);
 
   protected submit(): void {
     if (this.control.valid) this.ref.close(this.control.value.trim());

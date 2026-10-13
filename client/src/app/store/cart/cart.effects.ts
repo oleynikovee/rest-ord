@@ -81,17 +81,25 @@ export const syncMenuFromCheckoutIssues = createEffect(
   { functional: true },
 );
 
-export const notifyCheckout = createEffect(
+export const notifyCheckoutSuccess = createEffect(
   (actions$ = inject(Actions), notify = inject(NotifyService), router = inject(Router)) =>
     actions$.pipe(
-      ofType(CartActions.checkoutSuccess, CartActions.checkoutFailure),
+      ofType(CartActions.checkoutSuccess),
+      // switchMap: the previous snack bar is replaced, so its action stream is dropped too.
+      switchMap(({ order }) =>
+        notify.info(`Order #${order.number} placed`, 'View orders').onAction(),
+      ),
+      tap(() => void router.navigate(['/orders'])),
+    ),
+  { functional: true, dispatch: false },
+);
+
+export const notifyCheckoutFailure = createEffect(
+  (actions$ = inject(Actions), notify = inject(NotifyService)) =>
+    actions$.pipe(
+      ofType(CartActions.checkoutFailure),
       tap((action) => {
-        if (action.type === CartActions.checkoutSuccess.type) {
-          notify
-            .info(`Order #${action.order.number} placed`, 'View orders')
-            .onAction()
-            .subscribe(() => void router.navigate(['/orders']));
-        } else if (action.error.code === 'MENU_CHANGED') {
+        if (action.error.code === 'MENU_CHANGED') {
           notify.error('The menu changed while you were ordering. Please review your cart.');
         } else if (isTransient(action.error)) {
           notify.error(

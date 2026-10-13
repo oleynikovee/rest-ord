@@ -1,7 +1,14 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { ScrollingModule } from '@angular/cdk/scrolling';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog } from '@angular/material/dialog';
@@ -54,6 +61,7 @@ export const ROW_HEIGHT = 72;
 export class MenuPage {
   private readonly store = inject(Store);
   private readonly dialog = inject(MatDialog);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly rowHeight = ROW_HEIGHT;
   protected readonly wide = toSignal(
@@ -122,6 +130,7 @@ export class MenuPage {
         maxWidth: '95vw',
       })
       .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((result) => {
         if (result) this.store.dispatch(CartActions.addItem({ item, ...result }));
       });

@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatDialog } from '@angular/material/dialog';
@@ -36,6 +44,7 @@ import { ItemDialog, type ItemDialogData } from './item-dialog';
 export class SetupPage {
   private readonly store = inject(Store);
   private readonly dialog = inject(MatDialog);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly loaded = this.store.selectSignal(menuFeature.selectLoaded);
   protected readonly loadError = this.store.selectSignal(menuFeature.selectError);
@@ -137,6 +146,7 @@ export class SetupPage {
     this.dialog
       .open<PromptDialog, PromptData, string>(PromptDialog, { data })
       .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => value && then(value));
   }
 
@@ -144,6 +154,7 @@ export class SetupPage {
     this.dialog
       .open<ConfirmDialog, ConfirmData, boolean>(ConfirmDialog, { data })
       .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((ok) => ok && then());
   }
 
@@ -151,6 +162,7 @@ export class SetupPage {
     this.dialog
       .open<ItemDialog, ItemDialogData, MenuItemInput>(ItemDialog, { data, maxWidth: '95vw' })
       .afterClosed()
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((input) => input && then(input));
   }
 }

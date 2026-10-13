@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -8,6 +8,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import type { Category, MenuItem, MenuItemInput } from '../../core/models';
+import { invalidSignal } from '../../shared/form-signals';
 import { toCents } from '../../shared/money.pipe';
 
 export interface ItemDialogData {
@@ -71,7 +72,7 @@ export interface ItemDialogData {
       </mat-dialog-content>
       <mat-dialog-actions align="end">
         <button mat-button type="button" mat-dialog-close>Cancel</button>
-        <button mat-flat-button type="submit" [disabled]="form.invalid">Save</button>
+        <button mat-flat-button type="submit" [disabled]="invalid()">Save</button>
       </mat-dialog-actions>
     </form>
   `,
@@ -123,9 +124,11 @@ export class ItemDialog {
     initialValue: this.initial.openPrice,
   });
 
+  protected readonly invalid = invalidSignal(this.form);
+
   constructor() {
     // Price is required only for fixed-price items.
-    this.form.controls.openPrice.valueChanges.subscribe((open) => {
+    this.form.controls.openPrice.valueChanges.pipe(takeUntilDestroyed()).subscribe((open) => {
       const price = this.form.controls.price;
       if (open) price.removeValidators(Validators.required);
       else price.addValidators(Validators.required);

@@ -5,6 +5,7 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import type { MenuItem } from '../../core/models';
+import { invalidSignal } from '../../shared/form-signals';
 import { toCents } from '../../shared/money.pipe';
 
 export interface OpenPriceResult {
@@ -40,9 +41,7 @@ export interface OpenPriceResult {
             formControlName="price"
             cdkFocusInitial
           />
-          @if (form.controls.price.hasError('min') || form.controls.price.hasError('required')) {
-            <mat-error>Enter a price greater than 0</mat-error>
-          }
+          <mat-error>Enter a price from 0.01 to 10 000</mat-error>
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Quantity</mat-label>
@@ -55,14 +54,12 @@ export interface OpenPriceResult {
             step="1"
             formControlName="quantity"
           />
-          @if (form.controls.quantity.invalid) {
-            <mat-error>From 1 to 99</mat-error>
-          }
+          <mat-error>From 1 to 99</mat-error>
         </mat-form-field>
       </mat-dialog-content>
       <mat-dialog-actions align="end">
         <button mat-button type="button" mat-dialog-close>Cancel</button>
-        <button mat-flat-button type="submit" [disabled]="form.invalid">Add to cart</button>
+        <button mat-flat-button type="submit" [disabled]="invalid()">Add to cart</button>
       </mat-dialog-actions>
     </form>
   `,
@@ -91,6 +88,8 @@ export class OpenPriceDialog {
       validators: [Validators.required, Validators.min(1), Validators.max(99)],
     }),
   });
+
+  protected readonly invalid = invalidSignal(this.form);
 
   protected submit(): void {
     if (this.form.invalid) return;
