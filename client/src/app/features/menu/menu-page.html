@@ -1,0 +1,68 @@
+<mat-sidenav-container class="container">
+  <mat-sidenav-content class="main">
+    <div class="filters">
+      <mat-form-field appearance="outline" class="search" subscriptSizing="dynamic">
+        <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+        <mat-label>Search dishes</mat-label>
+        <input matInput type="search" [value]="search()" (input)="search.set($any($event.target).value)" />
+      </mat-form-field>
+      <mat-chip-listbox class="chips" aria-label="Categories" hideSingleSelectionIndicator>
+        <mat-chip-option [selected]="categoryId() === null" (click)="selectCategory(null)">All</mat-chip-option>
+        @for (category of categories(); track category.id) {
+          <mat-chip-option [selected]="categoryId() === category.id" (click)="selectCategory(category.id)">
+            {{ category.name }}
+          </mat-chip-option>
+        }
+      </mat-chip-listbox>
+    </div>
+
+    @if (loaded()) {
+      @if (rows().length === 0) {
+        <p class="empty">Nothing found. Try another search or category.</p>
+      } @else {
+        <cdk-virtual-scroll-viewport class="viewport" [itemSize]="rowHeight" minBufferPx="400" maxBufferPx="800">
+          <div *cdkVirtualFor="let row of rows(); trackBy: trackRow; templateCacheSize: 40" class="row">
+            @if (row.kind === 'header') {
+              <h2 class="section">{{ row.name }} <span class="count">{{ row.count }}</span></h2>
+            } @else {
+              <app-menu-item-row
+                [item]="row.item"
+                [quantity]="quantities().get(row.item.id) ?? 0"
+                (add)="add(row.item)"
+                (quantityChange)="setQuantity(row.item, $event)"
+              />
+            }
+          </div>
+        </cdk-virtual-scroll-viewport>
+      }
+    } @else if (loadError()) {
+      <div class="page-error" role="alert">
+        <p>We couldn't load the menu. {{ loadError()!.message }}</p>
+        <button mat-flat-button type="button" (click)="retry()">Try again</button>
+      </div>
+    } @else {
+      <div class="viewport" aria-busy="true" aria-label="Loading menu">
+        @for (i of skeletonRows; track i) {
+          <div class="skeleton-row"><div class="skeleton"></div></div>
+        }
+      </div>
+    }
+
+    @if (!wide() && cartCount() > 0) {
+      <button mat-flat-button type="button" class="cart-bar" (click)="cartOpen.set(true)">
+        <mat-icon>shopping_cart</mat-icon>
+        View cart · {{ cartCount() }} · {{ cartTotal() | money }}
+      </button>
+    }
+  </mat-sidenav-content>
+
+  <mat-sidenav
+    class="cart"
+    position="end"
+    [mode]="wide() ? 'side' : 'over'"
+    [opened]="wide() || cartOpen()"
+    (closedStart)="cartOpen.set(false)"
+  >
+    <app-cart-panel [closable]="!wide()" (closed)="cartOpen.set(false)" />
+  </mat-sidenav>
+</mat-sidenav-container>
