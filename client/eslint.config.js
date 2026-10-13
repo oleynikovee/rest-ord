@@ -31,6 +31,11 @@ module.exports = defineConfig([
           selector: 'PropertyDefinition > ArrowFunctionExpression',
           message: 'Use a class method instead of an arrow function property.',
         },
+        // TypeScript style guide: `const ... as const` instead of enums.
+        {
+          selector: 'TSEnumDeclaration',
+          message: 'Use a `const ... as const` object or array instead of an enum.',
+        },
       ],
       '@angular-eslint/directive-selector': [
         'error',
