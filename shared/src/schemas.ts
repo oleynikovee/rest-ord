@@ -34,6 +34,36 @@ export const MenuItemSchema = z
   })
   .meta({ id: 'MenuItem' });
 
+export const CategoryInputSchema = z
+  .object({
+    name: z.string().min(1).max(60),
+    sortOrder: z.int().min(0).optional(),
+  })
+  .meta({ id: 'CategoryInput' });
+
+export const CategoryPatchSchema = CategoryInputSchema.partial().meta({ id: 'CategoryPatch' });
+
+export const MenuItemInputSchema = z
+  .object({
+    categoryId: id,
+    name: z.string().min(1).max(100),
+    description: z.string().max(300).optional(),
+    price: cents.max(1_000_000).nullable().optional(),
+    available: z.boolean().optional(),
+    openPrice: z.boolean().optional(),
+  })
+  .meta({ id: 'MenuItemInput' });
+
+export const MenuItemPatchSchema = MenuItemInputSchema.partial().meta({ id: 'MenuItemPatch' });
+
+export const ClientConfigSchema = z
+  .object({
+    sentryDsn: z.string().nullable(),
+    environment: z.string(),
+    release: z.string().nullable(),
+  })
+  .meta({ id: 'ClientConfig' });
+
 export const MenuSnapshotSchema = z
   .object({
     categories: z.array(CategorySchema),

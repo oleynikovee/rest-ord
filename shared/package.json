@@ -12,6 +12,10 @@
     "./schemas": {
       "types": "./dist/schemas.d.ts",
       "default": "./dist/schemas.js"
+    },
+    "./openapi": {
+      "types": "./dist/openapi.d.ts",
+      "default": "./dist/openapi.js"
     }
   },
   "files": [
