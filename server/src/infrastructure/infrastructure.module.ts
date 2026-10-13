@@ -16,14 +16,17 @@ import {
   IdempotencyStore,
   MenuRepository,
   OrdersRepository,
+  UsersRepository,
 } from '../domain/ports.js';
 import { MemoryEventBus } from './memory/memory-event-bus.js';
 import { MemoryIdempotencyStore } from './memory/memory-idempotency.store.js';
 import { MemoryMenuRepository } from './memory/memory-menu.repository.js';
 import { MemoryOrdersRepository } from './memory/memory-orders.repository.js';
+import { MemoryUsersRepository } from './memory/memory-users.repository.js';
 import { PgDatabase } from './postgres/pg-database.js';
 import { PgMenuRepository } from './postgres/pg-menu.repository.js';
 import { PgOrdersRepository } from './postgres/pg-orders.repository.js';
+import { PgUsersRepository } from './postgres/pg-users.repository.js';
 import { createRedis } from './redis/redis-connection.js';
 import { RedisEventBus } from './redis/redis-event-bus.js';
 import { RedisIdempotencyStore } from './redis/redis-idempotency.store.js';
@@ -100,6 +103,12 @@ export class InfrastructureModule {
           pg ? new PgOrdersRepository(pg) : new MemoryOrdersRepository(),
       },
       {
+        provide: UsersRepository,
+        inject: [PG],
+        useFactory: (pg: PgDatabase | null) =>
+          pg ? new PgUsersRepository(pg) : new MemoryUsersRepository(),
+      },
+      {
         provide: IdempotencyStore,
         inject: [REDIS],
         useFactory: (redis: RedisClients | null) =>
@@ -119,7 +128,14 @@ export class InfrastructureModule {
     return {
       module: InfrastructureModule,
       providers,
-      exports: [APP_CONFIG, MenuRepository, OrdersRepository, IdempotencyStore, EventBus],
+      exports: [
+        APP_CONFIG,
+        MenuRepository,
+        OrdersRepository,
+        UsersRepository,
+        IdempotencyStore,
+        EventBus,
+      ],
     };
   }
 }

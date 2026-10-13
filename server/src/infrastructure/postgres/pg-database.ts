@@ -35,6 +35,20 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS orders_active_idx ON orders (updated_at) WHERE status <> 'COMPLETED';
+
+CREATE TABLE IF NOT EXISTS users (
+  id uuid PRIMARY KEY,
+  email text NOT NULL UNIQUE,
+  name text NOT NULL,
+  role text NOT NULL CHECK (role IN ('admin', 'customer')),
+  password_hash text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Added with authentication; nullable so databases created earlier keep working.
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES users(id);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name text;
+CREATE INDEX IF NOT EXISTS orders_user_idx ON orders (user_id, number DESC);
 `;
 
 /** Arbitrary constant for pg_advisory_lock so concurrent instances migrate one at a time. */

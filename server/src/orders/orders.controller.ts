@@ -9,7 +9,8 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
-import type { Order } from '../domain/models.js';
+import { CurrentUser } from '../auth/auth.decorators.js';
+import type { Order, User } from '../domain/models.js';
 import { CreateOrderDto } from './orders.dto.js';
 import { OrdersService } from './orders.service.js';
 
@@ -19,14 +20,16 @@ const IDEMPOTENCY_KEY = /^[A-Za-z0-9_-]{8,128}$/;
 export class OrdersController {
   constructor(private readonly orders: OrdersService) {}
 
+  /** Requires a session (global AuthGuard); customers get only their own orders. */
   @Get()
-  list(): Promise<Order[]> {
-    return this.orders.list();
+  list(@CurrentUser() user: User): Promise<Order[]> {
+    return this.orders.list(user);
   }
 
   @Post()
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   async create(
+    @CurrentUser() user: User,
     @Headers('idempotency-key') key: string | undefined,
     @Body() dto: CreateOrderDto,
     @Res({ passthrough: true }) res: Response,
@@ -37,7 +40,7 @@ export class OrdersController {
         message: 'A valid Idempotency-Key header is required.',
       });
     }
-    const { order, replayed } = await this.orders.place(key, dto);
+    const { order, replayed } = await this.orders.place(user, key, dto);
     res.status(replayed ? 200 : 201);
     if (replayed) res.setHeader('Idempotent-Replayed', 'true');
     return order;

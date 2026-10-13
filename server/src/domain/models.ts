@@ -48,6 +48,9 @@ export interface OrderLine {
 export interface Order {
   id: string;
   number: number;
+  /** Owner of the order; `null` only for orders created before authentication existed. */
+  userId: string | null;
+  customerName: string;
   lines: OrderLine[];
   subtotal: Cents;
   discount: Cents;
@@ -59,8 +62,23 @@ export interface Order {
 
 export type NewOrder = Pick<
   Order,
-  'lines' | 'subtotal' | 'discount' | 'total'
+  'userId' | 'customerName' | 'lines' | 'subtotal' | 'discount' | 'total'
 >;
+
+export const ROLES = ['admin', 'customer'] as const;
+export type Role = (typeof ROLES)[number];
+
+/** What the API and tokens expose about a user: never the password hash. */
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: Role;
+}
+
+export interface UserRecord extends User {
+  passwordHash: string;
+}
 
 export type MenuChangeIssueKind =
   | 'removed'

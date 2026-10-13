@@ -1,7 +1,6 @@
 import type {
   MenuChangeIssue,
   MenuItem,
-  NewOrder,
   OrderLine,
 } from '../domain/models.js';
 
@@ -14,8 +13,15 @@ export interface RequestedLine {
   openPrice: boolean;
 }
 
+export interface PricedOrder {
+  lines: OrderLine[];
+  subtotal: number;
+  discount: number;
+  total: number;
+}
+
 export type PricingResult =
-  | { ok: true; order: NewOrder }
+  | { ok: true; order: PricedOrder }
   | { ok: false; reason: 'menu_changed'; issues: MenuChangeIssue[] }
   | { ok: false; reason: 'discount_too_large'; subtotal: number }
   | { ok: false; reason: 'invalid_open_price'; itemId: string };

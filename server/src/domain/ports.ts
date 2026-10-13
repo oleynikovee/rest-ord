@@ -4,6 +4,7 @@ import type {
   MenuSnapshot,
   NewOrder,
   Order,
+  UserRecord,
 } from './models.js';
 
 /**
@@ -33,8 +34,17 @@ export abstract class MenuRepository {
   abstract seed(snapshot: MenuSnapshot): Promise<void>;
 }
 
+export abstract class UsersRepository {
+  abstract findById(id: string): Promise<UserRecord | null>;
+  /** Case-insensitive: emails are stored lower-cased. */
+  abstract findByEmail(email: string): Promise<UserRecord | null>;
+  /** Returns `null` when the email is already taken. */
+  abstract create(user: Omit<UserRecord, 'id'>): Promise<UserRecord | null>;
+}
+
 export abstract class OrdersRepository {
-  abstract list(limit: number): Promise<Order[]>;
+  /** Newest first; only the given user's orders when `userId` is set. */
+  abstract list(limit: number, userId?: string): Promise<Order[]>;
   abstract findById(id: string): Promise<Order | null>;
   abstract findByIdempotencyKey(key: string): Promise<Order | null>;
   /** Must be atomic per idempotency key: a duplicate key returns the existing order. */

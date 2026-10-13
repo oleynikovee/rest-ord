@@ -1,25 +1,20 @@
 import type { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
-import { AppModule } from '../src/app.module.js';
-import { configureApp } from '../src/app.setup.js';
-import { loadConfig } from '../src/config.js';
 import type { MenuItem, MenuSnapshot, Order } from '../src/domain/models.js';
 import { OrderStatusSimulator } from '../src/orders/order-status.simulator.js';
+import { ADMIN, CUSTOMER, createTestApp, signIn } from './helpers.js';
 
 describe('Menu and orders (e2e, in-memory storage)', () => {
   let app: INestApplication<App>;
   let item: MenuItem;
+  let customer: ReturnType<typeof request.agent>;
+  let admin: ReturnType<typeof request.agent>;
 
   beforeEach(async () => {
-    const config = { ...loadConfig({}), statusStepMs: 0 };
-    const moduleRef = await Test.createTestingModule({
-      imports: [AppModule.forRoot(config)],
-    }).compile();
-    app = moduleRef.createNestApplication();
-    configureApp(app);
-    await app.init();
+    app = await createTestApp();
+    customer = await signIn(app, CUSTOMER.email, CUSTOMER.password);
+    admin = await signIn(app, ADMIN.email, ADMIN.password);
 
     const menu = await request(app.getHttpServer()).get('/api/menu').expect(200);
     const snapshot = menu.body as MenuSnapshot;
@@ -31,7 +26,7 @@ describe('Menu and orders (e2e, in-memory storage)', () => {
   });
 
   const placeOrder = (key: string, unitPrice = item.price!): request.Test =>
-    request(app.getHttpServer())
+    customer
       .post('/api/orders')
       .set('Idempotency-Key', key)
       .send({
@@ -51,7 +46,7 @@ describe('Menu and orders (e2e, in-memory storage)', () => {
     expect((second.body as Order).id).toBe((first.body as Order).id);
     expect((first.body as Order).total).toBe(item.price! * 2 - 100);
 
-    const orders = await request(app.getHttpServer()).get('/api/orders').expect(200);
+    const orders = await customer.get('/api/orders').expect(200);
     expect(orders.body).toHaveLength(1);
   });
 
@@ -62,12 +57,12 @@ describe('Menu and orders (e2e, in-memory storage)', () => {
     expect(responses.filter((r) => r.status === 201)).toHaveLength(1);
     responses.forEach((r) => expect([200, 201, 409]).toContain(r.status));
 
-    const orders = await request(app.getHttpServer()).get('/api/orders').expect(200);
+    const orders = await customer.get('/api/orders').expect(200);
     expect(orders.body).toHaveLength(1);
   });
 
   it('refuses the order with details when an item became unavailable', async () => {
-    await request(app.getHttpServer())
+    await admin
       .patch(`/api/items/${item.id}`)
       .send({ available: false })
       .expect(200);
@@ -79,7 +74,7 @@ describe('Menu and orders (e2e, in-memory storage)', () => {
     });
 
     // The key is released, so the same checkout can be retried after the fix.
-    await request(app.getHttpServer())
+    await admin
       .patch(`/api/items/${item.id}`)
       .send({ available: true })
       .expect(200);
@@ -91,18 +86,18 @@ describe('Menu and orders (e2e, in-memory storage)', () => {
   });
 
   it('requires an idempotency key', async () => {
-    await request(app.getHttpServer())
+    await customer
       .post('/api/orders')
       .send({ lines: [], discount: 0 })
       .expect(400);
   });
 
   it('validates menu items', async () => {
-    await request(app.getHttpServer())
+    await admin
       .post('/api/items')
       .send({ categoryId: item.categoryId, name: 'No price', openPrice: false })
       .expect(400);
-    const created = await request(app.getHttpServer())
+    const created = await admin
       .post('/api/items')
       .send({ categoryId: item.categoryId, name: 'Market fish', openPrice: true })
       .expect(201);
@@ -115,7 +110,7 @@ describe('Menu and orders (e2e, in-memory storage)', () => {
     Object.assign(simulator, { config: { statusStepMs: -1 } });
     await simulator.tick();
 
-    const orders = await request(app.getHttpServer()).get('/api/orders').expect(200);
+    const orders = await customer.get('/api/orders').expect(200);
     expect((orders.body as Order[]).find((o) => o.id === created.id)?.status).toBe('ACCEPTED');
   });
 });

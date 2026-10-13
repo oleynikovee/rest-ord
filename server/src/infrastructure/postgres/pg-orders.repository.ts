@@ -11,6 +11,8 @@ import type { PgDatabase } from './pg-database.js';
 interface OrderRow {
   id: string;
   number: number;
+  user_id: string | null;
+  customer_name: string | null;
   lines: OrderLine[];
   subtotal: number;
   discount: number;
@@ -23,6 +25,8 @@ interface OrderRow {
 const toOrder = (row: OrderRow): Order => ({
   id: row.id,
   number: row.number,
+  userId: row.user_id,
+  customerName: row.customer_name ?? '',
   lines: row.lines,
   subtotal: row.subtotal,
   discount: row.discount,
@@ -37,10 +41,12 @@ export class PgOrdersRepository extends OrdersRepository {
     super();
   }
 
-  async list(limit: number): Promise<Order[]> {
+  async list(limit: number, userId?: string): Promise<Order[]> {
     const { rows } = await this.db.pool.query<OrderRow>(
-      'SELECT * FROM orders ORDER BY number DESC LIMIT $1',
-      [limit],
+      `SELECT * FROM orders
+       WHERE $2::uuid IS NULL OR user_id = $2::uuid
+       ORDER BY number DESC LIMIT $1`,
+      [limit, userId ?? null],
     );
     return rows.map(toOrder);
   }
@@ -65,13 +71,16 @@ export class PgOrdersRepository extends OrdersRepository {
     // The unique constraint is the last line of defence against double orders,
     // even if the Redis lock was lost.
     const { rows } = await this.db.pool.query<OrderRow>(
-      `INSERT INTO orders (id, idempotency_key, lines, subtotal, discount, total, status)
-       VALUES ($1, $2, $3, $4, $5, $6, 'NEW')
+      `INSERT INTO orders
+         (id, idempotency_key, user_id, customer_name, lines, subtotal, discount, total, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'NEW')
        ON CONFLICT (idempotency_key) DO NOTHING
        RETURNING *`,
       [
         randomUUID(),
         idempotencyKey,
+        order.userId,
+        order.customerName,
         JSON.stringify(order.lines),
         order.subtotal,
         order.discount,

@@ -4,7 +4,7 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
-import { type Order, type OrderEvent, TOPICS } from '../domain/models.js';
+import { type Order, type OrderEvent, TOPICS, type User } from '../domain/models.js';
 import {
   EventBus,
   IdempotencyStore,
@@ -31,11 +31,18 @@ export class OrdersService {
     private readonly bus: EventBus,
   ) {}
 
-  list(limit = 200): Promise<Order[]> {
-    return this.orders.list(limit);
+  /** Admins see every order, customers only their own. */
+  list(user: User, limit = 200): Promise<Order[]> {
+    return this.orders.list(limit, user.role === 'admin' ? undefined : user.id);
   }
 
-  async place(idempotencyKey: string, dto: CreateOrderDto): Promise<PlaceOrderResult> {
+  async place(
+    user: User,
+    clientKey: string,
+    dto: CreateOrderDto,
+  ): Promise<PlaceOrderResult> {
+    // Keys are scoped per user: another user's key can never return someone else's order.
+    const idempotencyKey = `${user.id}:${clientKey}`;
     const state = await this.idempotency.acquire(idempotencyKey);
 
     if (state.kind === 'completed') {
@@ -86,7 +93,10 @@ export class OrdersService {
         }
       }
 
-      const order = await this.orders.create(result.order, idempotencyKey);
+      const order = await this.orders.create(
+        { ...result.order, userId: user.id, customerName: user.name },
+        idempotencyKey,
+      );
       await this.idempotency.complete(idempotencyKey, order.id);
       this.logger.log(`Order #${order.number} placed, total ${order.total}`);
       // The order is already stored: a failed broadcast must not turn it into an error.

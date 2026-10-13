@@ -7,8 +7,9 @@ export class MemoryOrdersRepository extends OrdersRepository {
   private readonly byKey = new Map<string, string>();
   private sequence = 0;
 
-  async list(limit: number): Promise<Order[]> {
+  async list(limit: number, userId?: string): Promise<Order[]> {
     return [...this.orders.values()]
+      .filter((order) => userId === undefined || order.userId === userId)
       .sort((a, b) => b.number - a.number)
       .slice(0, limit)
       .map(clone);
