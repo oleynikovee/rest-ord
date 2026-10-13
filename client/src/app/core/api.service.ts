@@ -25,6 +25,15 @@ const retryReads = <T>(): MonoTypeOperatorFunction<T> =>
     },
   });
 
+export interface Versioned {
+  id: string;
+  version: number;
+}
+
+const ifMatch = (entity: Versioned): { headers: HttpHeaders } => ({
+  headers: new HttpHeaders({ 'If-Match': `"${entity.version}"` }),
+});
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly http = inject(HttpClient);
@@ -65,23 +74,25 @@ export class ApiService {
     return this.http.post<Category>('/api/categories', { name });
   }
 
-  updateCategory(id: string, name: string): Observable<Category> {
-    return this.http.patch<Category>(`/api/categories/${id}`, { name });
+  // Writes send the version they are based on: the server refuses them (412) if it is outdated.
+  updateCategory(category: Versioned, name: string): Observable<Category> {
+    return this.http.patch<Category>(`/api/categories/${category.id}`, { name }, ifMatch(category));
   }
 
-  deleteCategory(id: string): Observable<void> {
-    return this.http.delete<void>(`/api/categories/${id}`);
+  deleteCategory(category: Versioned): Observable<void> {
+    return this.http.delete<void>(`/api/categories/${category.id}`, ifMatch(category));
   }
 
   createItem(input: MenuItemInput): Observable<MenuItem> {
     return this.http.post<MenuItem>('/api/items', input);
   }
 
-  updateItem(id: string, changes: Partial<MenuItemInput>): Observable<MenuItem> {
-    return this.http.patch<MenuItem>(`/api/items/${id}`, changes);
+  updateItem(item: Versioned, changes: Partial<MenuItemInput>): Observable<MenuItem> {
+    return this.http.patch<MenuItem>(`/api/items/${item.id}`, changes, ifMatch(item));
   }
 
-  deleteItem(id: string): Observable<void> {
-    return this.http.delete<void>(`/api/items/${id}`);
+  deleteItem(item: Versioned): Observable<void> {
+    return this.http.delete<void>(`/api/items/${item.id}`, ifMatch(item));
   }
+
 }

@@ -64,6 +64,7 @@ describe('Menu and orders (e2e, in-memory storage)', () => {
   it('refuses the order with details when an item became unavailable', async () => {
     await admin
       .patch(`/api/items/${item.id}`)
+      .set('If-Match', `"${item.version}"`)
       .send({ available: false })
       .expect(200);
 
@@ -76,6 +77,7 @@ describe('Menu and orders (e2e, in-memory storage)', () => {
     // The key is released, so the same checkout can be retried after the fix.
     await admin
       .patch(`/api/items/${item.id}`)
+      .set('If-Match', `"${item.version + 1}"`)
       .send({ available: true })
       .expect(200);
     await placeOrder('checkout-key-2').expect(201);

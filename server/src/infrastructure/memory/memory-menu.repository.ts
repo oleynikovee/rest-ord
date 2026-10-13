@@ -4,6 +4,7 @@ import {
   type CategoryInput,
   MenuRepository,
   type MenuItemInput,
+  type VersionedWrite,
 } from '../../domain/ports.js';
 
 export class MemoryMenuRepository extends MenuRepository {
@@ -51,16 +52,17 @@ export class MemoryMenuRepository extends MenuRepository {
   async updateCategory(
     id: string,
     input: CategoryInput,
-  ): Promise<Category | null> {
-    const current = this.categories.get(id);
-    if (!current) return null;
-    const next: Category = { ...current, ...input, version: current.version + 1 };
-    this.categories.set(id, next);
-    return { ...next };
+    expectedVersion: number,
+  ): Promise<VersionedWrite<Category>> {
+    return this.write(this.categories, id, expectedVersion, (current) => ({
+      ...current,
+      ...input,
+      version: current.version + 1,
+    }));
   }
 
-  async deleteCategory(id: string): Promise<boolean> {
-    return this.categories.delete(id);
+  async deleteCategory(id: string, expectedVersion: number): Promise<VersionedWrite<Category>> {
+    return this.write(this.categories, id, expectedVersion, null);
   }
 
   async createItem(input: MenuItemInput): Promise<MenuItem> {
@@ -69,16 +71,39 @@ export class MemoryMenuRepository extends MenuRepository {
     return { ...item };
   }
 
-  async updateItem(id: string, input: MenuItemInput): Promise<MenuItem | null> {
-    const current = this.items.get(id);
-    if (!current) return null;
-    const next: MenuItem = { ...current, ...input, version: current.version + 1 };
-    this.items.set(id, next);
-    return { ...next };
+  async updateItem(
+    id: string,
+    input: MenuItemInput,
+    expectedVersion: number,
+  ): Promise<VersionedWrite<MenuItem>> {
+    return this.write(this.items, id, expectedVersion, (current) => ({
+      ...current,
+      ...input,
+      version: current.version + 1,
+    }));
   }
 
-  async deleteItem(id: string): Promise<boolean> {
-    return this.items.delete(id);
+  async deleteItem(id: string, expectedVersion: number): Promise<VersionedWrite<MenuItem>> {
+    return this.write(this.items, id, expectedVersion, null);
+  }
+
+  /** Compare-and-set on the version; `next = null` deletes. Synchronous, so atomic in one process. */
+  private write<T extends { version: number }>(
+    store: Map<string, T>,
+    id: string,
+    expectedVersion: number,
+    next: ((current: T) => T) | null,
+  ): VersionedWrite<T> {
+    const current = store.get(id);
+    if (!current) return { status: 'not_found' };
+    if (current.version !== expectedVersion) return { status: 'conflict', current: { ...current } };
+    if (next) {
+      const value = next(current);
+      store.set(id, value);
+      return { status: 'ok', value: { ...value } };
+    }
+    store.delete(id);
+    return { status: 'ok', value: { ...current } };
   }
 
   async isEmpty(): Promise<boolean> {

@@ -26,13 +26,13 @@ export const SetupActions = createActionGroup({
   source: 'Setup',
   events: {
     'Create Category': props<{ name: string }>(),
-    'Rename Category': props<{ id: string; name: string }>(),
-    'Delete Category': props<{ id: string }>(),
+    'Rename Category': props<{ category: Category; name: string }>(),
+    'Delete Category': props<{ category: Category }>(),
     'Create Item': props<{ input: MenuItemInput }>(),
     /** Applied optimistically; `previous` is restored if the server rejects it. */
     'Update Item': props<{ previous: MenuItem; changes: Partial<MenuItemInput> }>(),
     'Update Item Failure': props<{ previous: MenuItem; error: ApiError }>(),
-    'Delete Item': props<{ id: string }>(),
+    'Delete Item': props<{ item: MenuItem }>(),
     'Request Failure': props<{ error: ApiError }>(),
   },
 });

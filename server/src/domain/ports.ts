@@ -15,6 +15,15 @@ import type {
 export type CategoryInput = Pick<Category, 'name' | 'sortOrder'>;
 export type MenuItemInput = Omit<MenuItem, 'id' | 'version'>;
 
+/**
+ * Result of a conditional (optimistically locked) write: it only applies when the
+ * stored version still equals the version the client based its change on.
+ */
+export type VersionedWrite<T> =
+  | { status: 'ok'; value: T }
+  | { status: 'not_found' }
+  | { status: 'conflict'; current: T };
+
 export abstract class MenuRepository {
   abstract getSnapshot(): Promise<MenuSnapshot>;
   abstract findItems(ids: string[]): Promise<MenuItem[]>;
@@ -25,11 +34,16 @@ export abstract class MenuRepository {
   abstract updateCategory(
     id: string,
     input: CategoryInput,
-  ): Promise<Category | null>;
-  abstract deleteCategory(id: string): Promise<boolean>;
+    expectedVersion: number,
+  ): Promise<VersionedWrite<Category>>;
+  abstract deleteCategory(id: string, expectedVersion: number): Promise<VersionedWrite<Category>>;
   abstract createItem(input: MenuItemInput): Promise<MenuItem>;
-  abstract updateItem(id: string, input: MenuItemInput): Promise<MenuItem | null>;
-  abstract deleteItem(id: string): Promise<boolean>;
+  abstract updateItem(
+    id: string,
+    input: MenuItemInput,
+    expectedVersion: number,
+  ): Promise<VersionedWrite<MenuItem>>;
+  abstract deleteItem(id: string, expectedVersion: number): Promise<VersionedWrite<MenuItem>>;
   abstract isEmpty(): Promise<boolean>;
   abstract seed(snapshot: MenuSnapshot): Promise<void>;
 }

@@ -120,6 +120,8 @@ export const ApiErrorBodySchema = z
     code: z.string().optional(),
     message: z.union([z.string(), z.array(z.string())]),
     issues: z.array(MenuChangeIssueSchema).optional(),
+    /** With 412 VERSION_CONFLICT: the current state of the entity that was edited. */
+    current: z.union([MenuItemSchema, CategorySchema]).optional(),
   })
   .meta({ id: 'ApiError' });
 

@@ -56,4 +56,15 @@ describe('menu reducer', () => {
     const state = reducer(loaded, MenuLiveActions.itemDeleted({ id: 'pizza' }));
     expect(state.items.ids).toEqual([]);
   });
+
+  it('shows the version of the other admin after a conflict', () => {
+    const previous = loaded.items.entities['pizza']!;
+    const optimistic = reducer(loaded, SetupActions.updateItem({ previous, changes: { price: 900 } }));
+    const theirs = menuItem({ price: 1500, version: 3 });
+    const resolved = reducer(
+      optimistic,
+      SetupActions.updateItemFailure({ previous, error: { status: 412, code: 'VERSION_CONFLICT', message: '', current: theirs } }),
+    );
+    expect(resolved.items.entities['pizza']).toEqual(theirs);
+  });
 });

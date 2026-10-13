@@ -88,9 +88,9 @@ describe('Authentication and authorization (e2e)', () => {
     const admin = await signIn(app, ADMIN.email, ADMIN.password);
     const { items } = (await customer.get('/api/menu').expect(200)).body as MenuSnapshot;
 
-    await customer.patch(`/api/items/${items[0].id}`).send({ available: false }).expect(403);
+    await customer.patch(`/api/items/${items[0].id}`).set('If-Match', '1').send({ available: false }).expect(403);
     await customer.post('/api/categories').send({ name: 'Hack' }).expect(403);
-    await admin.patch(`/api/items/${items[0].id}`).send({ available: false }).expect(200);
+    await admin.patch(`/api/items/${items[0].id}`).set('If-Match', '1').send({ available: false }).expect(200);
   });
 
   it('shows customers only their own orders and admins all of them', async () => {

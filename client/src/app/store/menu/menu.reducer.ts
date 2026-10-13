@@ -83,11 +83,13 @@ export const menuFeature = createFeature({
       ...state,
       items: itemAdapter.updateOne({ id: previous.id, changes }, state.items),
     })),
-    on(SetupActions.updateItemFailure, (state, { previous }) => {
+    on(SetupActions.updateItemFailure, (state, { previous, error }) => {
+      // Version conflict: show what the other admin saved instead of our stale copy.
+      const latest = error.current && 'categoryId' in error.current ? error.current : previous;
       const current = state.items.entities[previous.id];
       // Keep a newer server version if one already arrived.
-      if (!current || current.version > previous.version) return state;
-      return { ...state, items: itemAdapter.setOne(previous, state.items) };
+      if (!current || current.version > latest.version) return state;
+      return { ...state, items: itemAdapter.setOne(latest, state.items) };
     }),
   ),
 });

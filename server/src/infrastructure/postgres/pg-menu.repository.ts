@@ -4,6 +4,7 @@ import {
   type CategoryInput,
   MenuRepository,
   type MenuItemInput,
+  type VersionedWrite,
 } from '../../domain/ports.js';
 import type { PgDatabase } from './pg-database.js';
 
@@ -99,21 +100,22 @@ export class PgMenuRepository extends MenuRepository {
   async updateCategory(
     id: string,
     input: CategoryInput,
-  ): Promise<Category | null> {
+    expectedVersion: number,
+  ): Promise<VersionedWrite<Category>> {
     const { rows } = await this.db.pool.query<CategoryRow>(
       `UPDATE categories SET name = $2, sort_order = $3, version = version + 1
-       WHERE id = $1 RETURNING *`,
-      [id, input.name, input.sortOrder],
+       WHERE id = $1 AND version = $4 RETURNING *`,
+      [id, input.name, input.sortOrder, expectedVersion],
     );
-    return rows[0] ? toCategory(rows[0]) : null;
+    return rows[0] ? { status: 'ok', value: toCategory(rows[0]) } : this.categoryMiss(id);
   }
 
-  async deleteCategory(id: string): Promise<boolean> {
-    const { rowCount } = await this.db.pool.query(
-      'DELETE FROM categories WHERE id = $1',
-      [id],
+  async deleteCategory(id: string, expectedVersion: number): Promise<VersionedWrite<Category>> {
+    const { rows } = await this.db.pool.query<CategoryRow>(
+      'DELETE FROM categories WHERE id = $1 AND version = $2 RETURNING *',
+      [id, expectedVersion],
     );
-    return (rowCount ?? 0) > 0;
+    return rows[0] ? { status: 'ok', value: toCategory(rows[0]) } : this.categoryMiss(id);
   }
 
   async createItem(input: MenuItemInput): Promise<MenuItem> {
@@ -133,12 +135,17 @@ export class PgMenuRepository extends MenuRepository {
     return toItem(rows[0]);
   }
 
-  async updateItem(id: string, input: MenuItemInput): Promise<MenuItem | null> {
+  /** The version check is part of the UPDATE itself, so concurrent edits cannot both win. */
+  async updateItem(
+    id: string,
+    input: MenuItemInput,
+    expectedVersion: number,
+  ): Promise<VersionedWrite<MenuItem>> {
     const { rows } = await this.db.pool.query<ItemRow>(
       `UPDATE menu_items
        SET category_id = $2, name = $3, description = $4, price = $5,
            available = $6, open_price = $7, version = version + 1
-       WHERE id = $1 RETURNING *`,
+       WHERE id = $1 AND version = $8 RETURNING *`,
       [
         id,
         input.categoryId,
@@ -147,17 +154,29 @@ export class PgMenuRepository extends MenuRepository {
         input.price,
         input.available,
         input.openPrice,
+        expectedVersion,
       ],
     );
-    return rows[0] ? toItem(rows[0]) : null;
+    return rows[0] ? { status: 'ok', value: toItem(rows[0]) } : this.itemMiss(id);
   }
 
-  async deleteItem(id: string): Promise<boolean> {
-    const { rowCount } = await this.db.pool.query(
-      'DELETE FROM menu_items WHERE id = $1',
-      [id],
+  async deleteItem(id: string, expectedVersion: number): Promise<VersionedWrite<MenuItem>> {
+    const { rows } = await this.db.pool.query<ItemRow>(
+      'DELETE FROM menu_items WHERE id = $1 AND version = $2 RETURNING *',
+      [id, expectedVersion],
     );
-    return (rowCount ?? 0) > 0;
+    return rows[0] ? { status: 'ok', value: toItem(rows[0]) } : this.itemMiss(id);
+  }
+
+  /** No row matched: tell "gone" apart from "changed by someone else". */
+  private async categoryMiss(id: string): Promise<VersionedWrite<Category>> {
+    const current = await this.findCategory(id);
+    return current ? { status: 'conflict', current } : { status: 'not_found' };
+  }
+
+  private async itemMiss(id: string): Promise<VersionedWrite<MenuItem>> {
+    const current = await this.findItem(id);
+    return current ? { status: 'conflict', current } : { status: 'not_found' };
   }
 
   async isEmpty(): Promise<boolean> {

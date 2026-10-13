@@ -86,7 +86,7 @@ export class SetupPage {
     if (!category) return;
     this.prompt(
       { title: 'Rename category', label: 'Name', value: category.name, confirm: 'Save' },
-      (name) => this.store.dispatch(SetupActions.renameCategory({ id: category.id, name })),
+      (name) => this.store.dispatch(SetupActions.renameCategory({ category, name })),
     );
   }
 
@@ -99,7 +99,7 @@ export class SetupPage {
         message: 'Only empty categories can be deleted.',
         confirm: 'Delete',
       },
-      () => this.store.dispatch(SetupActions.deleteCategory({ id: category.id })),
+      () => this.store.dispatch(SetupActions.deleteCategory({ category })),
     );
   }
 
@@ -138,7 +138,7 @@ export class SetupPage {
         message: 'It disappears from the menu immediately.',
         confirm: 'Delete',
       },
-      () => this.store.dispatch(SetupActions.deleteItem({ id: item.id })),
+      () => this.store.dispatch(SetupActions.deleteItem({ item })),
     );
   }
 

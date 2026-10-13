@@ -1,11 +1,12 @@
 import { inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import type { Action } from '@ngrx/store';
-import { type Observable, catchError, map, mergeMap, of, switchMap, tap } from 'rxjs';
+import { type Action, Store } from '@ngrx/store';
+import { type Observable, catchError, concatMap, filter, groupBy, map, mergeMap, of, switchMap, take, tap } from 'rxjs';
 import { toApiError } from '../../core/api-error';
 import { ApiService } from '../../core/api.service';
 import { NotifyService } from '../../core/notify.service';
 import { MenuActions, MenuLiveActions, SetupActions } from './menu.actions';
+import { selectItemEntities } from './menu.selectors';
 
 export const loadMenu = createEffect(
   (actions$ = inject(Actions), api = inject(ApiService)) =>
@@ -44,20 +45,20 @@ export const setupRequests = createEffect(
                 .pipe(map((category) => MenuLiveActions.categoryUpserted({ category })));
             case SetupActions.renameCategory.type:
               return api
-                .updateCategory(action.id, action.name)
+                .updateCategory(action.category, action.name)
                 .pipe(map((category) => MenuLiveActions.categoryUpserted({ category })));
             case SetupActions.deleteCategory.type:
               return api
-                .deleteCategory(action.id)
-                .pipe(map(() => MenuLiveActions.categoryDeleted({ id: action.id })));
+                .deleteCategory(action.category)
+                .pipe(map(() => MenuLiveActions.categoryDeleted({ id: action.category.id })));
             case SetupActions.createItem.type:
               return api
                 .createItem(action.input)
                 .pipe(map((item) => MenuLiveActions.itemUpserted({ item })));
             case SetupActions.deleteItem.type:
               return api
-                .deleteItem(action.id)
-                .pipe(map(() => MenuLiveActions.itemDeleted({ id: action.id })));
+                .deleteItem(action.item)
+                .pipe(map(() => MenuLiveActions.itemDeleted({ id: action.item.id })));
           }
         })();
         return request$.pipe(
@@ -70,17 +71,47 @@ export const setupRequests = createEffect(
   { functional: true },
 );
 
+/**
+ * Edits of one item are sent one after another (concatMap per item), each with the
+ * version the server returned for the previous one: quick repeated toggles by the same
+ * admin must not conflict with each other. Different items still go in parallel.
+ */
 export const updateItem = createEffect(
-  (actions$ = inject(Actions), api = inject(ApiService)) =>
+  (actions$ = inject(Actions), api = inject(ApiService), store = inject(Store)) =>
     actions$.pipe(
       ofType(SetupActions.updateItem),
-      mergeMap(({ previous, changes }) =>
-        api.updateItem(previous.id, changes).pipe(
-          map((item) => MenuLiveActions.itemUpserted({ item })),
-          catchError((error: unknown) =>
-            of(SetupActions.updateItemFailure({ previous, error: toApiError(error) })),
+      groupBy(({ previous }) => previous.id),
+      mergeMap((edits$) =>
+        edits$.pipe(
+          concatMap(({ previous, changes }) =>
+            store.select(selectItemEntities).pipe(
+              take(1),
+              switchMap((items) =>
+                api.updateItem({ id: previous.id, version: items[previous.id]?.version ?? previous.version }, changes),
+              ),
+              map((item) => MenuLiveActions.itemUpserted({ item })),
+              catchError((error: unknown) =>
+                of(SetupActions.updateItemFailure({ previous, error: toApiError(error) })),
+              ),
+            ),
           ),
         ),
+      ),
+    ),
+  { functional: true },
+);
+
+/** A refused write that carries the current state (412) brings the local copy up to date. */
+export const applyConflictState = createEffect(
+  (actions$ = inject(Actions)) =>
+    actions$.pipe(
+      ofType(SetupActions.requestFailure),
+      map(({ error }) => error.current),
+      filter((current) => current !== undefined),
+      map((current) =>
+        'categoryId' in current
+          ? MenuLiveActions.itemUpserted({ item: current })
+          : MenuLiveActions.categoryUpserted({ category: current }),
       ),
     ),
   { functional: true },

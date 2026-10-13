@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  PreconditionFailedException,
 } from '@nestjs/common';
 import {
   type Category,
@@ -15,6 +16,7 @@ import {
   EventBus,
   MenuRepository,
   type MenuItemInput,
+  type VersionedWrite,
 } from '../domain/ports.js';
 import type {
   CategoryDto,
@@ -43,26 +45,33 @@ export class MenuService {
     return category;
   }
 
-  async updateCategory(id: string, dto: UpdateCategoryDto): Promise<Category> {
-    const current = await this.menu.findCategory(id);
-    if (!current) throw categoryNotFound();
-    const category = await this.menu.updateCategory(id, {
-      name: dto.name ?? current.name,
-      sortOrder: dto.sortOrder ?? current.sortOrder,
-    });
-    if (!category) throw categoryNotFound();
+  async updateCategory(
+    id: string,
+    dto: UpdateCategoryDto,
+    expectedVersion: number,
+  ): Promise<Category> {
+    const current = this.checkVersion(await this.menu.findCategory(id), expectedVersion, categoryNotFound);
+    const category = this.unwrap(
+      await this.menu.updateCategory(
+        id,
+        { name: dto.name ?? current.name, sortOrder: dto.sortOrder ?? current.sortOrder },
+        expectedVersion,
+      ),
+      categoryNotFound,
+    );
     await this.emit({ type: 'category.upserted', category });
     return category;
   }
 
-  async deleteCategory(id: string): Promise<void> {
+  async deleteCategory(id: string, expectedVersion: number): Promise<void> {
+    this.checkVersion(await this.menu.findCategory(id), expectedVersion, categoryNotFound);
     if ((await this.menu.countItemsInCategory(id)) > 0) {
       throw new ConflictException({
         code: 'CATEGORY_NOT_EMPTY',
         message: 'Move or delete the items of this category first.',
       });
     }
-    if (!(await this.menu.deleteCategory(id))) throw categoryNotFound();
+    this.unwrap(await this.menu.deleteCategory(id, expectedVersion), categoryNotFound);
     await this.emit({ type: 'category.deleted', id });
   }
 
@@ -80,9 +89,12 @@ export class MenuService {
     return item;
   }
 
-  async updateItem(id: string, dto: UpdateMenuItemDto): Promise<MenuItem> {
-    const current = await this.menu.findItem(id);
-    if (!current) throw itemNotFound();
+  async updateItem(
+    id: string,
+    dto: UpdateMenuItemDto,
+    expectedVersion: number,
+  ): Promise<MenuItem> {
+    const current = this.checkVersion(await this.menu.findItem(id), expectedVersion, itemNotFound);
     const input = await this.validateItem(
       {
         categoryId: dto.categoryId ?? current.categoryId,
@@ -94,15 +106,36 @@ export class MenuService {
       },
       current.categoryId,
     );
-    const item = await this.menu.updateItem(id, input);
-    if (!item) throw itemNotFound();
+    const item = this.unwrap(await this.menu.updateItem(id, input, expectedVersion), itemNotFound);
     await this.emit({ type: 'item.upserted', item });
     return item;
   }
 
-  async deleteItem(id: string): Promise<void> {
-    if (!(await this.menu.deleteItem(id))) throw itemNotFound();
+  async deleteItem(id: string, expectedVersion: number): Promise<void> {
+    this.unwrap(await this.menu.deleteItem(id, expectedVersion), itemNotFound);
     await this.emit({ type: 'item.deleted', id });
+  }
+
+  /** Fails fast before validation; the repository repeats the check atomically on write. */
+  private checkVersion<T extends Category | MenuItem>(
+    current: T | null,
+    expectedVersion: number,
+    notFound: () => NotFoundException,
+  ): T {
+    if (!current) throw notFound();
+    if (current.version !== expectedVersion) throw versionConflict(current);
+    return current;
+  }
+
+  private unwrap<T extends Category | MenuItem>(result: VersionedWrite<T>, notFound: () => NotFoundException): T {
+    switch (result.status) {
+      case 'ok':
+        return result.value;
+      case 'not_found':
+        throw notFound();
+      case 'conflict':
+        throw versionConflict(result.current);
+    }
   }
 
   private async validateItem(
@@ -138,3 +171,11 @@ const categoryNotFound = (): NotFoundException =>
   new NotFoundException({ code: 'CATEGORY_NOT_FOUND', message: 'Category not found.' });
 const itemNotFound = (): NotFoundException =>
   new NotFoundException({ code: 'ITEM_NOT_FOUND', message: 'Menu item not found.' });
+
+/** 412: the client's copy is outdated. The current state lets it show what changed. */
+const versionConflict = (current: Category | MenuItem): PreconditionFailedException =>
+  new PreconditionFailedException({
+    code: 'VERSION_CONFLICT',
+    message: 'Someone else changed this in the meantime. The latest version is shown now.',
+    current,
+  });
