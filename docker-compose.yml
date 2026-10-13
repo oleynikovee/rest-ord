@@ -1,0 +1,51 @@
+# One command: docker compose up --build  →  http://localhost:8080
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: restaurant
+      POSTGRES_PASSWORD: restaurant
+      POSTGRES_DB: restaurant
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U restaurant -d restaurant']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    networks: [backend]
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--save', '', '--appendonly', 'no']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    networks: [backend]
+
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgres://restaurant:restaurant@postgres:5432/restaurant
+      REDIS_URL: redis://redis:6379
+      STATUS_STEP_SECONDS: 8
+    ports:
+      - '8080:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [backend, frontend]
+
+networks:
+  # Databases are reachable only from the app, never from the host or the internet.
+  backend:
+    internal: true
+  frontend: {}
+
+volumes:
+  pgdata: {}
