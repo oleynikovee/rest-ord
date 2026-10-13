@@ -8,7 +8,7 @@ const initial = reducer(undefined, { type: 'init' });
 describe('menu reducer', () => {
   const loaded = reducer(
     initial,
-    MenuActions.loadSuccess({ snapshot: { categories: [], items: [menuItem({ version: 2 })] } }),
+    MenuActions.loadSuccess({ snapshot: { categories: [], items: [menuItem({ version: 2 })], seq: 0 } }),
   );
 
   it('applies newer real-time updates and ignores stale ones', () => {
@@ -32,7 +32,7 @@ describe('menu reducer', () => {
     );
     const resynced = reducer(
       live,
-      MenuActions.loadSuccess({ snapshot: { categories: [], items: [menuItem({ version: 4 })] } }),
+      MenuActions.loadSuccess({ snapshot: { categories: [], items: [menuItem({ version: 4 })], seq: 0 } }),
     );
     expect(resynced.items.entities['pizza']?.available).toBe(false);
   });

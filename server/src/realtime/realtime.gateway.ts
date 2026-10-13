@@ -10,7 +10,7 @@ import { parseCookie } from 'cookie';
 import type { Server, Socket } from 'socket.io';
 import { AuthService } from '../auth/auth.service.js';
 import { SESSION_COOKIE } from '../auth/auth.types.js';
-import { type MenuEvent, type OrderEvent, TOPICS } from '../domain/models.js';
+import { type EventEnvelope, SOCKET_EVENTS, TOPICS } from '../domain/models.js';
 import { EventBus } from '../domain/ports.js';
 
 const ADMINS_ROOM = 'role:admin';
@@ -24,7 +24,8 @@ const userRoom = (userId: string): string => `user:${userId}`;
  * owner and to admins: the session cookie is verified on the handshake and the
  * socket joins its rooms. Same-origin only (no CORS), like the REST API.
  */
-@WebSocketGateway()
+// Heartbeats every 10 s: a dead connection is noticed within ~15 s (default: up to 45 s).
+@WebSocketGateway({ pingInterval: 10_000, pingTimeout: 5_000 })
 export class RealtimeGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect, OnApplicationShutdown
 {
@@ -41,11 +42,15 @@ export class RealtimeGateway
 
   afterInit(): void {
     this.unsubscribe.push(
-      this.bus.subscribe<MenuEvent>(TOPICS.menu, (event) => this.server.emit('menu', event)),
-      this.bus.subscribe<OrderEvent>(TOPICS.orders, (event) => {
+      // Envelopes carry `seq`, so clients know where to resume after a reconnect.
+      this.bus.subscribe<EventEnvelope>(TOPICS.menu, (envelope) =>
+        this.server.emit(SOCKET_EVENTS.menu, envelope),
+      ),
+      this.bus.subscribe<EventEnvelope>(TOPICS.orders, (envelope) => {
+        if (envelope.topic !== TOPICS.orders) return;
         const rooms = [ADMINS_ROOM];
-        if (event.order.userId) rooms.push(userRoom(event.order.userId));
-        this.server.to(rooms).emit('order', event);
+        if (envelope.event.order.userId) rooms.push(userRoom(envelope.event.order.userId));
+        this.server.to(rooms).emit(SOCKET_EVENTS.order, envelope);
       }),
     );
   }

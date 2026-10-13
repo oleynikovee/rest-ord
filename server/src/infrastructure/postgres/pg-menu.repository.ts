@@ -1,12 +1,21 @@
 import { randomUUID } from 'node:crypto';
-import type { Category, MenuItem, MenuSnapshot } from '../../domain/models.js';
+import type pg from 'pg';
+import {
+  type Category,
+  type MenuEvent,
+  type MenuItem,
+  type MenuSnapshot,
+  TOPICS,
+} from '../../domain/models.js';
 import {
   type CategoryInput,
+  type MenuData,
   MenuRepository,
   type MenuItemInput,
   type VersionedWrite,
 } from '../../domain/ports.js';
 import type { PgDatabase } from './pg-database.js';
+import { appendEvent } from './pg-event-log.js';
 
 interface CategoryRow {
   id: string;
@@ -44,20 +53,41 @@ const toItem = (row: ItemRow): MenuItem => ({
   version: row.version,
 });
 
+const itemParams = (input: MenuItemInput): unknown[] => [
+  input.categoryId,
+  input.name,
+  input.description,
+  input.price,
+  input.available,
+  input.openPrice,
+];
+
+/** Every write commits together with its event in the outbox (see PgEventLog). */
 export class PgMenuRepository extends MenuRepository {
   constructor(private readonly db: PgDatabase) {
     super();
   }
 
+  /** One consistent snapshot: the data and the log position it corresponds to. */
   async getSnapshot(): Promise<MenuSnapshot> {
-    const [categories, items] = await Promise.all([
-      this.db.pool.query<CategoryRow>('SELECT * FROM categories'),
-      this.db.pool.query<ItemRow>('SELECT * FROM menu_items'),
-    ]);
-    return {
-      categories: categories.rows.map(toCategory),
-      items: items.rows.map(toItem),
-    };
+    const client = await this.db.pool.connect();
+    try {
+      await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
+      const seq = await client.query<{ seq: string | null }>('SELECT max(seq) AS seq FROM outbox');
+      const categories = await client.query<CategoryRow>('SELECT * FROM categories');
+      const items = await client.query<ItemRow>('SELECT * FROM menu_items');
+      await client.query('COMMIT');
+      return {
+        categories: categories.rows.map(toCategory),
+        items: items.rows.map(toItem),
+        seq: Number(seq.rows[0]?.seq ?? 0),
+      };
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   async findItems(ids: string[]): Promise<MenuItem[]> {
@@ -74,10 +104,7 @@ export class PgMenuRepository extends MenuRepository {
   }
 
   async findCategory(id: string): Promise<Category | null> {
-    const { rows } = await this.db.pool.query<CategoryRow>(
-      'SELECT * FROM categories WHERE id = $1',
-      [id],
-    );
+    const { rows } = await this.db.pool.query<CategoryRow>('SELECT * FROM categories WHERE id = $1', [id]);
     return rows[0] ? toCategory(rows[0]) : null;
   }
 
@@ -90,11 +117,15 @@ export class PgMenuRepository extends MenuRepository {
   }
 
   async createCategory(input: CategoryInput): Promise<Category> {
-    const { rows } = await this.db.pool.query<CategoryRow>(
-      'INSERT INTO categories (id, name, sort_order) VALUES ($1, $2, $3) RETURNING *',
-      [randomUUID(), input.name, input.sortOrder],
-    );
-    return toCategory(rows[0]);
+    return this.db.transaction(async (client) => {
+      const { rows } = await client.query<CategoryRow>(
+        'INSERT INTO categories (id, name, sort_order) VALUES ($1, $2, $3) RETURNING *',
+        [randomUUID(), input.name, input.sortOrder],
+      );
+      const category = toCategory(rows[0]);
+      await this.log(client, { type: 'category.upserted', category });
+      return category;
+    });
   }
 
   async updateCategory(
@@ -102,37 +133,43 @@ export class PgMenuRepository extends MenuRepository {
     input: CategoryInput,
     expectedVersion: number,
   ): Promise<VersionedWrite<Category>> {
-    const { rows } = await this.db.pool.query<CategoryRow>(
-      `UPDATE categories SET name = $2, sort_order = $3, version = version + 1
-       WHERE id = $1 AND version = $4 RETURNING *`,
-      [id, input.name, input.sortOrder, expectedVersion],
+    return this.versioned(
+      (client) =>
+        client.query<CategoryRow>(
+          `UPDATE categories SET name = $2, sort_order = $3, version = version + 1
+           WHERE id = $1 AND version = $4 RETURNING *`,
+          [id, input.name, input.sortOrder, expectedVersion],
+        ),
+      toCategory,
+      (category) => ({ type: 'category.upserted', category }),
+      () => this.findCategory(id),
     );
-    return rows[0] ? { status: 'ok', value: toCategory(rows[0]) } : this.categoryMiss(id);
   }
 
   async deleteCategory(id: string, expectedVersion: number): Promise<VersionedWrite<Category>> {
-    const { rows } = await this.db.pool.query<CategoryRow>(
-      'DELETE FROM categories WHERE id = $1 AND version = $2 RETURNING *',
-      [id, expectedVersion],
+    return this.versioned(
+      (client) =>
+        client.query<CategoryRow>('DELETE FROM categories WHERE id = $1 AND version = $2 RETURNING *', [
+          id,
+          expectedVersion,
+        ]),
+      toCategory,
+      (category) => ({ type: 'category.deleted', id: category.id }),
+      () => this.findCategory(id),
     );
-    return rows[0] ? { status: 'ok', value: toCategory(rows[0]) } : this.categoryMiss(id);
   }
 
   async createItem(input: MenuItemInput): Promise<MenuItem> {
-    const { rows } = await this.db.pool.query<ItemRow>(
-      `INSERT INTO menu_items (id, category_id, name, description, price, available, open_price)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [
-        randomUUID(),
-        input.categoryId,
-        input.name,
-        input.description,
-        input.price,
-        input.available,
-        input.openPrice,
-      ],
-    );
-    return toItem(rows[0]);
+    return this.db.transaction(async (client) => {
+      const { rows } = await client.query<ItemRow>(
+        `INSERT INTO menu_items (id, category_id, name, description, price, available, open_price)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [randomUUID(), ...itemParams(input)],
+      );
+      const item = toItem(rows[0]);
+      await this.log(client, { type: 'item.upserted', item });
+      return item;
+    });
   }
 
   /** The version check is part of the UPDATE itself, so concurrent edits cannot both win. */
@@ -141,62 +178,48 @@ export class PgMenuRepository extends MenuRepository {
     input: MenuItemInput,
     expectedVersion: number,
   ): Promise<VersionedWrite<MenuItem>> {
-    const { rows } = await this.db.pool.query<ItemRow>(
-      `UPDATE menu_items
-       SET category_id = $2, name = $3, description = $4, price = $5,
-           available = $6, open_price = $7, version = version + 1
-       WHERE id = $1 AND version = $8 RETURNING *`,
-      [
-        id,
-        input.categoryId,
-        input.name,
-        input.description,
-        input.price,
-        input.available,
-        input.openPrice,
-        expectedVersion,
-      ],
+    return this.versioned(
+      (client) =>
+        client.query<ItemRow>(
+          `UPDATE menu_items
+           SET category_id = $2, name = $3, description = $4, price = $5,
+               available = $6, open_price = $7, version = version + 1
+           WHERE id = $1 AND version = $8 RETURNING *`,
+          [id, ...itemParams(input), expectedVersion],
+        ),
+      toItem,
+      (item) => ({ type: 'item.upserted', item }),
+      () => this.findItem(id),
     );
-    return rows[0] ? { status: 'ok', value: toItem(rows[0]) } : this.itemMiss(id);
   }
 
   async deleteItem(id: string, expectedVersion: number): Promise<VersionedWrite<MenuItem>> {
-    const { rows } = await this.db.pool.query<ItemRow>(
-      'DELETE FROM menu_items WHERE id = $1 AND version = $2 RETURNING *',
-      [id, expectedVersion],
+    return this.versioned(
+      (client) =>
+        client.query<ItemRow>('DELETE FROM menu_items WHERE id = $1 AND version = $2 RETURNING *', [
+          id,
+          expectedVersion,
+        ]),
+      toItem,
+      (item) => ({ type: 'item.deleted', id: item.id }),
+      () => this.findItem(id),
     );
-    return rows[0] ? { status: 'ok', value: toItem(rows[0]) } : this.itemMiss(id);
-  }
-
-  /** No row matched: tell "gone" apart from "changed by someone else". */
-  private async categoryMiss(id: string): Promise<VersionedWrite<Category>> {
-    const current = await this.findCategory(id);
-    return current ? { status: 'conflict', current } : { status: 'not_found' };
-  }
-
-  private async itemMiss(id: string): Promise<VersionedWrite<MenuItem>> {
-    const current = await this.findItem(id);
-    return current ? { status: 'conflict', current } : { status: 'not_found' };
   }
 
   async isEmpty(): Promise<boolean> {
-    const { rows } = await this.db.pool.query(
-      'SELECT 1 FROM categories LIMIT 1',
-    );
+    const { rows } = await this.db.pool.query('SELECT 1 FROM categories LIMIT 1');
     return rows.length === 0;
   }
 
-  async seed(snapshot: MenuSnapshot): Promise<void> {
-    const client = await this.db.pool.connect();
-    try {
-      await client.query('BEGIN');
+  async seed(data: MenuData): Promise<void> {
+    await this.db.transaction(async (client) => {
       await client.query(
         `INSERT INTO categories (id, name, sort_order, version)
          SELECT id, name, "sortOrder", version
          FROM jsonb_to_recordset($1::jsonb)
            AS x(id uuid, name text, "sortOrder" int, version int)
          ON CONFLICT (id) DO NOTHING`,
-        [JSON.stringify(snapshot.categories)],
+        [JSON.stringify(data.categories)],
       );
       await client.query(
         `INSERT INTO menu_items (id, category_id, name, description, price, available, open_price, version)
@@ -205,14 +228,34 @@ export class PgMenuRepository extends MenuRepository {
            AS x(id uuid, "categoryId" uuid, name text, description text, price int,
                 available boolean, "openPrice" boolean, version int)
          ON CONFLICT (id) DO NOTHING`,
-        [JSON.stringify(snapshot.items)],
+        [JSON.stringify(data.items)],
       );
-      await client.query('COMMIT');
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
+    });
+  }
+
+  /**
+   * A conditional write plus its event in one transaction. No matching row means
+   * either "gone" or "changed by someone else"; the current state tells which.
+   */
+  private async versioned<Row extends pg.QueryResultRow, T>(
+    write: (client: pg.PoolClient) => Promise<pg.QueryResult<Row>>,
+    map: (row: Row) => T,
+    toEvent: (value: T) => MenuEvent,
+    findCurrent: () => Promise<T | null>,
+  ): Promise<VersionedWrite<T>> {
+    const value = await this.db.transaction(async (client) => {
+      const { rows } = await write(client);
+      if (!rows[0]) return null;
+      const written = map(rows[0]);
+      await this.log(client, toEvent(written));
+      return written;
+    });
+    if (value) return { status: 'ok', value };
+    const current = await findCurrent();
+    return current ? { status: 'conflict', current } : { status: 'not_found' };
+  }
+
+  private log(client: pg.PoolClient, event: MenuEvent): Promise<void> {
+    return appendEvent(client, { topic: TOPICS.menu, event });
   }
 }

@@ -13,6 +13,7 @@ import type { Redis } from 'ioredis';
 import { APP_CONFIG, type AppConfig } from '../config.js';
 import {
   EventBus,
+  EventLog,
   IdempotencyStore,
   MenuRepository,
   OrdersRepository,
@@ -20,12 +21,14 @@ import {
   UsersRepository,
 } from '../domain/ports.js';
 import { MemoryEventBus } from './memory/memory-event-bus.js';
+import { MemoryEventLog } from './memory/memory-event-log.js';
 import { MemoryIdempotencyStore } from './memory/memory-idempotency.store.js';
 import { MemoryMenuRepository } from './memory/memory-menu.repository.js';
 import { MemoryOrdersRepository } from './memory/memory-orders.repository.js';
 import { MemoryPromoRepository } from './memory/memory-promo.repository.js';
 import { MemoryUsersRepository } from './memory/memory-users.repository.js';
 import { PgDatabase } from './postgres/pg-database.js';
+import { PgEventLog } from './postgres/pg-event-log.js';
 import { PgMenuRepository } from './postgres/pg-menu.repository.js';
 import { PgOrdersRepository } from './postgres/pg-orders.repository.js';
 import { PgPromoRepository } from './postgres/pg-promo.repository.js';
@@ -52,6 +55,7 @@ class InfrastructureLifecycle implements OnModuleInit, OnApplicationShutdown {
     @Inject(PG) private readonly pg: PgDatabase | null,
     @Inject(REDIS) private readonly redis: RedisClients | null,
     private readonly menu: MenuRepository,
+    private readonly log: EventLog,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -66,6 +70,7 @@ class InfrastructureLifecycle implements OnModuleInit, OnApplicationShutdown {
   }
 
   async onApplicationShutdown(): Promise<void> {
+    await this.log.close();
     await this.pg?.close();
     this.redis?.main.disconnect();
     this.redis?.subscriber.disconnect();
@@ -94,10 +99,15 @@ export class InfrastructureModule {
             : null,
       },
       {
-        provide: MenuRepository,
+        provide: EventLog,
         inject: [PG],
-        useFactory: (pg: PgDatabase | null) =>
-          pg ? new PgMenuRepository(pg) : new MemoryMenuRepository(),
+        useFactory: (pg: PgDatabase | null) => (pg ? new PgEventLog(pg) : new MemoryEventLog()),
+      },
+      {
+        provide: MenuRepository,
+        inject: [PG, EventLog],
+        useFactory: (pg: PgDatabase | null, log: EventLog) =>
+          pg ? new PgMenuRepository(pg) : new MemoryMenuRepository(log as MemoryEventLog),
       },
       {
         provide: PromoRepository,
@@ -107,10 +117,12 @@ export class InfrastructureModule {
       },
       {
         provide: OrdersRepository,
-        inject: [PG, PromoRepository],
+        inject: [PG, PromoRepository, EventLog],
         // In memory, redemption shares the promo store; in Postgres it is a transaction.
-        useFactory: (pg: PgDatabase | null, promos: PromoRepository) =>
-          pg ? new PgOrdersRepository(pg) : new MemoryOrdersRepository(promos as MemoryPromoRepository),
+        useFactory: (pg: PgDatabase | null, promos: PromoRepository, log: EventLog) =>
+          pg
+            ? new PgOrdersRepository(pg)
+            : new MemoryOrdersRepository(promos as MemoryPromoRepository, log as MemoryEventLog),
       },
       {
         provide: UsersRepository,
@@ -146,6 +158,7 @@ export class InfrastructureModule {
         UsersRepository,
         IdempotencyStore,
         EventBus,
+        EventLog,
       ],
     };
   }

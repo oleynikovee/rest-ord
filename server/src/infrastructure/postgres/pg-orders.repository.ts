@@ -1,15 +1,17 @@
 import { randomUUID } from 'node:crypto';
 import type { PoolClient } from 'pg';
-import type {
-  CreateOrderResult,
-  NewOrder,
-  Order,
-  OrderLine,
-  OrderStatus,
-  PromoRedemption,
+import {
+  type CreateOrderResult,
+  type NewOrder,
+  type Order,
+  type OrderLine,
+  type OrderStatus,
+  type PromoRedemption,
+  TOPICS,
 } from '../../domain/models.js';
 import { type OrdersListQuery, OrdersRepository } from '../../domain/ports.js';
 import type { PgDatabase } from './pg-database.js';
+import { appendEvent } from './pg-event-log.js';
 import type { PromoRow } from './pg-promo.repository.js';
 
 interface OrderRow {
@@ -119,8 +121,10 @@ export class PgOrdersRepository extends OrdersRepository {
         }
       }
 
+      const stored = toOrder(created);
+      await appendEvent(client, { topic: TOPICS.orders, event: { type: 'order.upserted', order: stored } });
       await client.query('COMMIT');
-      return { status: 'created', order: toOrder(created) };
+      return { status: 'created', order: stored };
     } catch (error) {
       await client.query('ROLLBACK').catch(() => undefined);
       throw error;
@@ -157,21 +161,28 @@ export class PgOrdersRepository extends OrdersRepository {
   }
 
   async advanceStale(olderThanMs: number): Promise<Order[]> {
-    // A single atomic UPDATE: safe to run from several server instances at once.
-    const { rows } = await this.db.pool.query<OrderRow>(
-      `UPDATE orders
-       SET status = CASE status
-             WHEN 'NEW' THEN 'ACCEPTED'
-             WHEN 'ACCEPTED' THEN 'COOKING'
-             WHEN 'COOKING' THEN 'READY'
-             WHEN 'READY' THEN 'COMPLETED'
-           END,
-           updated_at = now()
-       WHERE status <> 'COMPLETED'
-         AND updated_at < now() - make_interval(secs => $1::double precision / 1000)
-       RETURNING *`,
-      [olderThanMs],
-    );
-    return rows.map(toOrder);
+    // One atomic UPDATE (safe from several instances at once), logged in the same transaction.
+    return this.db.transaction(async (client) => {
+      const { rows } = await client.query<OrderRow>(
+        `UPDATE orders
+         SET status = CASE status
+               WHEN 'NEW' THEN 'ACCEPTED'
+               WHEN 'ACCEPTED' THEN 'COOKING'
+               WHEN 'COOKING' THEN 'READY'
+               WHEN 'READY' THEN 'COMPLETED'
+             END,
+             updated_at = now()
+         WHERE status <> 'COMPLETED'
+           AND updated_at < now() - make_interval(secs => $1::double precision / 1000)
+         RETURNING *`,
+        [olderThanMs],
+      );
+      const orders = rows.map(toOrder);
+      for (const order of orders) {
+        await appendEvent(client, { topic: TOPICS.orders, event: { type: 'order.upserted', order } });
+      }
+      return orders;
+    });
   }
+
 }

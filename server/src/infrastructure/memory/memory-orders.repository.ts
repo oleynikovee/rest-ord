@@ -5,12 +5,17 @@ import {
   nextStatus,
   type Order,
   type PromoRedemption,
+  TOPICS,
 } from '../../domain/models.js';
 import { type OrdersListQuery, OrdersRepository } from '../../domain/ports.js';
+import type { MemoryEventLog } from './memory-event-log.js';
 import type { MemoryPromoRepository } from './memory-promo.repository.js';
 
 export class MemoryOrdersRepository extends OrdersRepository {
-  constructor(private readonly promos: MemoryPromoRepository) {
+  constructor(
+    private readonly promos: MemoryPromoRepository,
+    private readonly log: MemoryEventLog,
+  ) {
     super();
   }
 
@@ -62,6 +67,7 @@ export class MemoryOrdersRepository extends OrdersRepository {
     };
     this.orders.set(order.id, order);
     this.byKey.set(idempotencyKey, order.id);
+    this.log.append({ topic: TOPICS.orders, event: { type: 'order.upserted', order: clone(order) } });
     return { status: 'created', order: clone(order) };
   }
 
@@ -73,6 +79,7 @@ export class MemoryOrdersRepository extends OrdersRepository {
       if (!status || Date.parse(order.updatedAt) > threshold) continue;
       order.status = status;
       order.updatedAt = new Date().toISOString();
+      this.log.append({ topic: TOPICS.orders, event: { type: 'order.upserted', order: clone(order) } });
       advanced.push(clone(order));
     }
     return advanced;

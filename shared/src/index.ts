@@ -14,6 +14,8 @@ import type {
   MenuItemSchema,
   MenuSnapshotSchema,
   OrderEventSchema,
+  EventEnvelopeSchema,
+  EventsPageSchema,
   OrderLineSchema,
   OrderSchema,
   OrdersPageSchema,
@@ -60,6 +62,8 @@ export type ValidatePromoRequest = z.infer<typeof ValidatePromoRequestSchema>;
 export type PromoQuote = z.infer<typeof PromoQuoteSchema>;
 export type MenuEvent = z.infer<typeof MenuEventSchema>;
 export type OrderEvent = z.infer<typeof OrderEventSchema>;
+export type EventEnvelope = z.infer<typeof EventEnvelopeSchema>;
+export type EventsPage = z.infer<typeof EventsPageSchema>;
 
 export function nextStatus(status: OrderStatus): OrderStatus | null {
   return ORDER_STATUSES[ORDER_STATUSES.indexOf(status) + 1] ?? null;

@@ -4,6 +4,7 @@ import type {
   MenuSnapshot,
   NewOrder,
   CreateOrderResult,
+  EventEnvelope,
   Order,
   PromoCode,
   PromoCodeInput,
@@ -18,6 +19,8 @@ import type {
 
 export type CategoryInput = Pick<Category, 'name' | 'sortOrder'>;
 export type MenuItemInput = Omit<MenuItem, 'id' | 'version'>;
+/** Menu content without a log position (used for seeding). */
+export type MenuData = Omit<MenuSnapshot, 'seq'>;
 
 /**
  * Result of a conditional (optimistically locked) write: it only applies when the
@@ -49,7 +52,8 @@ export abstract class MenuRepository {
   ): Promise<VersionedWrite<MenuItem>>;
   abstract deleteItem(id: string, expectedVersion: number): Promise<VersionedWrite<MenuItem>>;
   abstract isEmpty(): Promise<boolean>;
-  abstract seed(snapshot: MenuSnapshot): Promise<void>;
+  /** Initial content; not logged as events (clients load it with the snapshot). */
+  abstract seed(data: MenuData): Promise<void>;
 }
 
 export abstract class UsersRepository {
@@ -117,5 +121,35 @@ export abstract class PromoRepository {
     input: PromoCodeInput,
     expectedVersion: number,
   ): Promise<VersionedWrite<PromoCode>>;
+}
+
+/**
+ * The transactional outbox: an append-only, totally ordered log of domain events.
+ * Repositories append to it in the same transaction as the state change, so an event
+ * exists if and only if its change was committed.
+ */
+export abstract class EventLog {
+  /** Highest `seq` written so far, 0 when the log is empty. */
+  abstract latestSeq(): Promise<number>;
+  /** Events with `seq > after`, oldest first; `oldestSeq` is the first one still kept. */
+  abstract readAfter(
+    after: number,
+    limit: number,
+  ): Promise<{ events: EventEnvelope[]; oldestSeq: number | null }>;
+  /**
+   * Passes unpublished events to `publish` in order and marks them published.
+   * A failed publish leaves them pending (at-least-once delivery).
+   */
+  abstract publishPending(
+    publish: (event: EventEnvelope) => Promise<void>,
+    batchSize: number,
+  ): Promise<number>;
+  /** Becomes the only publisher among all instances; resolves `false` while another one is. */
+  abstract tryLead(): Promise<boolean>;
+  /** Calls `listener` soon after new events are committed. Returns an unsubscribe function. */
+  abstract onAppended(listener: () => void): () => void;
+  /** Deletes published events older than `olderThanMs`; returns how many. */
+  abstract prune(olderThanMs: number): Promise<number>;
+  abstract close(): Promise<void>;
 }
 

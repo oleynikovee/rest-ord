@@ -4,7 +4,7 @@
  * All money values are integer minor units (cents).
  */
 import { z } from 'zod';
-import { MENU_CHANGE_KINDS, ORDER_STATUSES, ORDERS_PAGE_SIZE, PROMO_KINDS, ROLES } from './constants.js';
+import { MENU_CHANGE_KINDS, ORDER_STATUSES, ORDERS_PAGE_SIZE, PROMO_KINDS, ROLES, TOPICS } from './constants.js';
 
 const id = z.uuid();
 const cents = z.int().min(0);
@@ -38,6 +38,8 @@ export const MenuSnapshotSchema = z
   .object({
     categories: z.array(CategorySchema),
     items: z.array(MenuItemSchema),
+    /** Position in the event log this snapshot reflects: replay events after it. */
+    seq: z.int().min(0),
   })
   .meta({ id: 'MenuSnapshot' });
 
@@ -225,6 +227,32 @@ export const OrderEventSchema = z
     order: OrderSchema,
   })
   .meta({ id: 'OrderEvent' });
+
+/** One entry of the event log, as pushed over the socket and returned by replay. */
+export const EventEnvelopeSchema = z
+  .discriminatedUnion('topic', [
+    z.object({ seq: z.int().min(1), topic: z.literal(TOPICS.menu), event: MenuEventSchema }),
+    z.object({ seq: z.int().min(1), topic: z.literal(TOPICS.orders), event: OrderEventSchema }),
+  ])
+  .meta({ id: 'EventEnvelope' });
+
+export const EventsPageSchema = z
+  .object({
+    /** Events after `after` that this user may see, in log order. */
+    events: z.array(EventEnvelopeSchema),
+    /** Continue from here; equals the latest seq when `hasMore` is false. */
+    nextAfter: z.int().min(0),
+    hasMore: z.boolean(),
+    /** The log no longer goes back that far: reload snapshots instead. */
+    reset: z.boolean(),
+  })
+  .meta({ id: 'EventsPage' });
+
+export const EventsQuerySchema = z
+  .object({
+    after: z.coerce.number().int().min(0),
+  })
+  .meta({ id: 'EventsQuery' });
 
 export const ApiErrorBodySchema = z
   .object({

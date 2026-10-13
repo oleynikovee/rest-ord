@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { APP_CONFIG, type AppConfig } from '../config.js';
 import { OrdersRepository } from '../domain/ports.js';
-import { OrdersService } from './orders.service.js';
 
 /**
  * Stands in for the kitchen: periodically moves every unfinished order one
@@ -24,7 +23,6 @@ export class OrderStatusSimulator
   constructor(
     @Inject(APP_CONFIG) private readonly config: AppConfig,
     private readonly repository: OrdersRepository,
-    private readonly orders: OrdersService,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -41,8 +39,8 @@ export class OrderStatusSimulator
     if (this.running) return;
     this.running = true;
     try {
-      const advanced = await this.repository.advanceStale(this.config.statusStepMs);
-      await Promise.all(advanced.map((order) => this.orders.publish(order)));
+      // The repository logs each status change in the same transaction (outbox).
+      await this.repository.advanceStale(this.config.statusStepMs);
     } catch (error) {
       this.logger.warn(`Status update failed: ${(error as Error).message}`);
     } finally {

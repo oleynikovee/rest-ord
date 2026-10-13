@@ -5,15 +5,8 @@ import {
   NotFoundException,
   PreconditionFailedException,
 } from '@nestjs/common';
+import type { Category, MenuItem, MenuSnapshot } from '../domain/models.js';
 import {
-  type Category,
-  type MenuEvent,
-  type MenuItem,
-  type MenuSnapshot,
-  TOPICS,
-} from '../domain/models.js';
-import {
-  EventBus,
   MenuRepository,
   type MenuItemInput,
   type VersionedWrite,
@@ -27,10 +20,8 @@ import type {
 
 @Injectable()
 export class MenuService {
-  constructor(
-    private readonly menu: MenuRepository,
-    private readonly bus: EventBus,
-  ) {}
+  /** Events are written by the repository together with each change (transactional outbox). */
+  constructor(private readonly menu: MenuRepository) {}
 
   getSnapshot(): Promise<MenuSnapshot> {
     return this.menu.getSnapshot();
@@ -41,7 +32,6 @@ export class MenuService {
       name: dto.name,
       sortOrder: dto.sortOrder ?? (await this.nextSortOrder()),
     });
-    await this.emit({ type: 'category.upserted', category });
     return category;
   }
 
@@ -59,7 +49,6 @@ export class MenuService {
       ),
       categoryNotFound,
     );
-    await this.emit({ type: 'category.upserted', category });
     return category;
   }
 
@@ -72,7 +61,6 @@ export class MenuService {
       });
     }
     this.unwrap(await this.menu.deleteCategory(id, expectedVersion), categoryNotFound);
-    await this.emit({ type: 'category.deleted', id });
   }
 
   async createItem(dto: MenuItemDto): Promise<MenuItem> {
@@ -85,7 +73,6 @@ export class MenuService {
       openPrice: dto.openPrice ?? false,
     });
     const item = await this.menu.createItem(input);
-    await this.emit({ type: 'item.upserted', item });
     return item;
   }
 
@@ -107,13 +94,11 @@ export class MenuService {
       current.categoryId,
     );
     const item = this.unwrap(await this.menu.updateItem(id, input, expectedVersion), itemNotFound);
-    await this.emit({ type: 'item.upserted', item });
     return item;
   }
 
   async deleteItem(id: string, expectedVersion: number): Promise<void> {
     this.unwrap(await this.menu.deleteItem(id, expectedVersion), itemNotFound);
-    await this.emit({ type: 'item.deleted', id });
   }
 
   /** Fails fast before validation; the repository repeats the check atomically on write. */
@@ -160,10 +145,6 @@ export class MenuService {
   private async nextSortOrder(): Promise<number> {
     const { categories } = await this.menu.getSnapshot();
     return categories.reduce((max, c) => Math.max(max, c.sortOrder + 1), 0);
-  }
-
-  private emit(event: MenuEvent): Promise<void> {
-    return this.bus.publish(TOPICS.menu, event);
   }
 }
 

@@ -2,7 +2,7 @@
  * The API contract (entities, events, constants) comes from the shared package,
  * so the server and the client cannot drift apart. Server-only types live here.
  */
-import type { Order, User } from '@trattoria/contracts';
+import type { MenuEvent, Order, OrderEvent, TOPICS, User } from '@trattoria/contracts';
 
 export * from '@trattoria/contracts';
 
@@ -31,8 +31,7 @@ export interface UserRecord extends User {
   passwordHash: string;
 }
 
-/** Event bus topics (internal, versioned). */
-export const TOPICS = {
-  menu: 'menu.changes.v1',
-  orders: 'order.lifecycle.v1',
-} as const;
+/** An event before it is written to the log (the log assigns `seq`). */
+export type LoggedEvent =
+  | { topic: typeof TOPICS.menu; event: MenuEvent }
+  | { topic: typeof TOPICS.orders; event: OrderEvent };

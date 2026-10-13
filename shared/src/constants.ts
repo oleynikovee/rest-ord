@@ -43,6 +43,14 @@ export const PROMO_ERRORS = {
 export const IDEMPOTENCY_HEADER = 'Idempotency-Key';
 export const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9_-]{8,128}$/;
 
+/** Topics of the event log (outbox). */
+export const TOPICS = {
+  menu: 'menu.changes.v1',
+  orders: 'order.lifecycle.v1',
+} as const;
+
+export const EVENTS_PAGE_SIZE = 500;
+
 /** Socket.IO event names. */
 export const SOCKET_EVENTS = {
   menu: 'menu',

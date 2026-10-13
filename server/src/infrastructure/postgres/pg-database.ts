@@ -78,6 +78,16 @@ CREATE TABLE IF NOT EXISTS promo_redemptions (
 CREATE INDEX IF NOT EXISTS promo_redemptions_user_idx ON promo_redemptions (promo_id, user_id);
 
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS promo_code text;
+
+-- Transactional outbox: events are written with the change they describe.
+CREATE TABLE IF NOT EXISTS outbox (
+  seq bigserial PRIMARY KEY,
+  topic text NOT NULL,
+  payload jsonb NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  published_at timestamptz
+);
+CREATE INDEX IF NOT EXISTS outbox_pending_idx ON outbox (seq) WHERE published_at IS NULL;
 `;
 
 /** Arbitrary constant for pg_advisory_lock so concurrent instances migrate one at a time. */
@@ -116,6 +126,22 @@ export class PgDatabase {
         );
         await new Promise((resolve) => setTimeout(resolve, 1000 * Math.min(attempt, 5)));
       }
+    }
+  }
+
+  /** Runs `work` in a transaction on one connection; rolls back if it throws. */
+  async transaction<T>(work: (client: pg.PoolClient) => Promise<T>): Promise<T> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await work(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => undefined);
+      throw error;
+    } finally {
+      client.release();
     }
   }
 

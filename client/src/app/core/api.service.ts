@@ -5,6 +5,7 @@ import type {
   Category,
   CreateOrderRequest,
   CurrentSessionResponse,
+  EventsPage,
   LoginRequest,
   MenuItem,
   MenuItemInput,
@@ -72,6 +73,11 @@ export class ApiService {
 
   updatePromoCode(promo: Versioned, input: PromoCodeInput): Observable<PromoCode> {
     return this.http.patch<PromoCode>(`/api/promo-codes/${promo.id}`, input, ifMatch(promo));
+  }
+
+  /** Events after `after` that this user may see (see EventsPage). */
+  getEvents(after: number): Observable<EventsPage> {
+    return this.http.get<EventsPage>('/api/events', { params: { after } }).pipe(retryReads());
   }
 
   getMenu(): Observable<MenuSnapshot> {

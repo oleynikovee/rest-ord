@@ -9,14 +9,11 @@ import {
   ORDERS_PAGE_SIZE,
   type Order,
   PROMO_ERRORS,
-  type OrderEvent,
   type OrdersPage,
   type OrdersQuery,
-  TOPICS,
   type User,
 } from '../domain/models.js';
 import {
-  EventBus,
   IdempotencyStore,
   MenuRepository,
   OrdersRepository,
@@ -39,7 +36,6 @@ export class OrdersService {
     private readonly orders: OrdersRepository,
     private readonly menu: MenuRepository,
     private readonly idempotency: IdempotencyStore,
-    private readonly bus: EventBus,
     private readonly promos: PromoService,
   ) {}
 
@@ -138,21 +134,13 @@ export class OrdersService {
       }
       const order = created.order;
       await this.idempotency.complete(idempotencyKey, order.id);
+      // Its event was written in the same transaction; the outbox relay broadcasts it.
       this.logger.log(`Order #${order.number} placed, total ${order.total}`);
-      // The order is already stored: a failed broadcast must not turn it into an error.
-      await this.publish(order).catch((error: Error) =>
-        this.logger.warn(`Order #${order.number} broadcast failed: ${error.message}`),
-      );
       return { order, replayed: false };
     } catch (error) {
       // Free the key so the user can fix the cart and retry with the same key.
       await this.idempotency.release(idempotencyKey).catch(() => undefined);
       throw error;
     }
-  }
-
-  publish(order: Order): Promise<void> {
-    const event: OrderEvent = { type: 'order.upserted', order };
-    return this.bus.publish(TOPICS.orders, event);
   }
 }

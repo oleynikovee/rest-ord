@@ -1,13 +1,12 @@
 import { Injectable, type OnDestroy } from '@angular/core';
 import type { Socket } from 'socket.io-client';
 import { Observable, from, share, switchMap } from 'rxjs';
-import type { MenuEvent, OrderEvent } from '../../core/models';
+import { type EventEnvelope, SOCKET_EVENTS } from '../../core/models';
 
 export type RealtimeEvent =
   | { kind: 'connected'; reconnect: boolean }
   | { kind: 'disconnected' }
-  | { kind: 'menu'; event: MenuEvent }
-  | { kind: 'order'; event: OrderEvent };
+  | { kind: 'event'; envelope: EventEnvelope };
 
 /**
  * Thin wrapper around Socket.IO. Reconnection with exponential backoff and
@@ -37,8 +36,9 @@ export class RealtimeService implements OnDestroy {
           });
           socket.on('disconnect', () => subscriber.next({ kind: 'disconnected' }));
           socket.on('connect_error', () => subscriber.next({ kind: 'disconnected' }));
-          socket.on('menu', (event: MenuEvent) => subscriber.next({ kind: 'menu', event }));
-          socket.on('order', (event: OrderEvent) => subscriber.next({ kind: 'order', event }));
+          const forward = (envelope: EventEnvelope): void => subscriber.next({ kind: 'event', envelope });
+          socket.on(SOCKET_EVENTS.menu, forward);
+          socket.on(SOCKET_EVENTS.order, forward);
 
           return () => {
             socket.removeAllListeners();

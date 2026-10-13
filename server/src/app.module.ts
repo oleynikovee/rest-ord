@@ -4,6 +4,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module.js';
 import type { AppConfig } from './config.js';
+import { EventsModule } from './events/events.module.js';
 import { HealthController } from './health/health.controller.js';
 import { InfrastructureModule } from './infrastructure/infrastructure.module.js';
 import { MenuModule } from './menu/menu.module.js';
@@ -21,6 +22,7 @@ export class AppModule {
         AuthModule,
         MenuModule,
         OrdersModule,
+        EventsModule,
         ...(config.clientDist
           ? [
               ServeStaticModule.forRoot({

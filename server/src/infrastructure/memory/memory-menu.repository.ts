@@ -1,18 +1,31 @@
 import { randomUUID } from 'node:crypto';
-import type { Category, MenuItem, MenuSnapshot } from '../../domain/models.js';
+import {
+  type Category,
+  type MenuEvent,
+  type MenuItem,
+  type MenuSnapshot,
+  TOPICS,
+} from '../../domain/models.js';
 import {
   type CategoryInput,
+  type MenuData,
   MenuRepository,
   type MenuItemInput,
   type VersionedWrite,
 } from '../../domain/ports.js';
+import type { MemoryEventLog } from './memory-event-log.js';
 
 export class MemoryMenuRepository extends MenuRepository {
+  constructor(private readonly log: MemoryEventLog) {
+    super();
+  }
+
   private readonly categories = new Map<string, Category>();
   private readonly items = new Map<string, MenuItem>();
 
   async getSnapshot(): Promise<MenuSnapshot> {
     return {
+      seq: this.log.currentSeq(),
       categories: [...this.categories.values()].map((c) => ({ ...c })),
       items: [...this.items.values()].map((i) => ({ ...i })),
     };
@@ -46,6 +59,7 @@ export class MemoryMenuRepository extends MenuRepository {
   async createCategory(input: CategoryInput): Promise<Category> {
     const category: Category = { id: randomUUID(), ...input, version: 1 };
     this.categories.set(category.id, category);
+    this.log.append({ topic: TOPICS.menu, event: { type: 'category.upserted', category } });
     return { ...category };
   }
 
@@ -54,20 +68,27 @@ export class MemoryMenuRepository extends MenuRepository {
     input: CategoryInput,
     expectedVersion: number,
   ): Promise<VersionedWrite<Category>> {
-    return this.write(this.categories, id, expectedVersion, (current) => ({
-      ...current,
-      ...input,
-      version: current.version + 1,
-    }));
+    return this.logged(
+      this.write(this.categories, id, expectedVersion, (current) => ({
+        ...current,
+        ...input,
+        version: current.version + 1,
+      })),
+      (category) => ({ type: 'category.upserted', category }),
+    );
   }
 
   async deleteCategory(id: string, expectedVersion: number): Promise<VersionedWrite<Category>> {
-    return this.write(this.categories, id, expectedVersion, null);
+    return this.logged(this.write(this.categories, id, expectedVersion, null), (category) => ({
+      type: 'category.deleted',
+      id: category.id,
+    }));
   }
 
   async createItem(input: MenuItemInput): Promise<MenuItem> {
     const item: MenuItem = { id: randomUUID(), ...input, version: 1 };
     this.items.set(item.id, item);
+    this.log.append({ topic: TOPICS.menu, event: { type: 'item.upserted', item } });
     return { ...item };
   }
 
@@ -76,15 +97,26 @@ export class MemoryMenuRepository extends MenuRepository {
     input: MenuItemInput,
     expectedVersion: number,
   ): Promise<VersionedWrite<MenuItem>> {
-    return this.write(this.items, id, expectedVersion, (current) => ({
-      ...current,
-      ...input,
-      version: current.version + 1,
-    }));
+    return this.logged(
+      this.write(this.items, id, expectedVersion, (current) => ({
+        ...current,
+        ...input,
+        version: current.version + 1,
+      })),
+      (item) => ({ type: 'item.upserted', item }),
+    );
   }
 
   async deleteItem(id: string, expectedVersion: number): Promise<VersionedWrite<MenuItem>> {
-    return this.write(this.items, id, expectedVersion, null);
+    return this.logged(this.write(this.items, id, expectedVersion, null), (item) => ({
+      type: 'item.deleted',
+      id: item.id,
+    }));
+  }
+
+  private logged<T>(result: VersionedWrite<T>, toEvent: (value: T) => MenuEvent): VersionedWrite<T> {
+    if (result.status === 'ok') this.log.append({ topic: TOPICS.menu, event: toEvent(result.value) });
+    return result;
   }
 
   /** Compare-and-set on the version; `next = null` deletes. Synchronous, so atomic in one process. */
@@ -110,11 +142,11 @@ export class MemoryMenuRepository extends MenuRepository {
     return this.categories.size === 0;
   }
 
-  async seed(snapshot: MenuSnapshot): Promise<void> {
-    for (const category of snapshot.categories) {
+  async seed(data: MenuData): Promise<void> {
+    for (const category of data.categories) {
       this.categories.set(category.id, { ...category });
     }
-    for (const item of snapshot.items) {
+    for (const item of data.items) {
       this.items.set(item.id, { ...item });
     }
   }

@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import type { Category, MenuItem, MenuSnapshot } from '../domain/models.js';
+import type { Category, MenuItem } from '../domain/models.js';
+import type { MenuData } from '../domain/ports.js';
 
 /** Deterministic UUID-shaped id so the seed is stable between restarts. */
 function stableId(seed: string): string {
@@ -35,7 +36,7 @@ const OPEN_PRICE_ITEMS: Record<string, string> = {
 };
 
 /** ~1000 items across 12 categories: big enough to exercise virtual scrolling. */
-export function generateSeedMenu(): MenuSnapshot {
+export function generateSeedMenu(): MenuData {
   const categories: Category[] = [];
   const items: MenuItem[] = [];
   let n = 0;
