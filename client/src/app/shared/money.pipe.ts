@@ -7,7 +7,9 @@ export function formatMoney(cents: number | null | undefined): string {
 }
 
 /** Formats integer cents as currency. */
-@Pipe({ name: 'money' })
+@Pipe({
+  name: 'money',
+})
 export class MoneyPipe implements PipeTransform {
   transform(cents: number | null | undefined): string {
     return formatMoney(cents);

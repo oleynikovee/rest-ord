@@ -11,49 +11,48 @@ import { connectionFeature } from './store/connection/connection.reducer';
 
 @Component({
   selector: 'app-root',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    RouterOutlet,
-    RouterLink,
-    RouterLinkActive,
-    MatToolbarModule,
-    MatButtonModule,
-    MatIconModule,
-    MatBadgeModule,
-    MatTooltipModule,
-  ],
   template: `
+    @let _cartCount = cartCount();
+    @let _status = status();
+    @let _statusLabel = statusLabel();
+    @let _statusHint = statusHint();
+
     <mat-toolbar class="toolbar">
-      <a class="brand" routerLink="/menu">
+      <a class="brand"
+          routerLink="/menu">
         <mat-icon aria-hidden="true">restaurant</mat-icon>
         <span class="brand-name">Trattoria</span>
       </a>
-      <nav class="nav" aria-label="Main">
-        <a mat-button routerLink="/menu" routerLinkActive="active">
-          <span
-            [matBadge]="cartCount() || null"
-            [matBadgeDescription]="cartCount() + ' items in cart'"
-            matBadgeOverlap="false"
-            >Menu</span
-          >
+      <nav class="nav"
+          aria-label="Main">
+        <a mat-button
+            routerLink="/menu"
+            routerLinkActive="active">
+          <span [matBadge]="_cartCount || null"
+              [matBadgeDescription]="_cartCount + ' items in cart'"
+              matBadgeOverlap="false">Menu</span>
         </a>
-        <a mat-button routerLink="/orders" routerLinkActive="active">Orders</a>
-        <a mat-button routerLink="/setup" routerLinkActive="active">Setup</a>
+        <a mat-button
+            routerLink="/orders"
+            routerLinkActive="active">Orders</a>
+        <a mat-button
+            routerLink="/setup"
+            routerLinkActive="active">Setup</a>
       </nav>
-      <span
-        class="status"
-        [class]="'status status-' + status()"
-        role="status"
-        [matTooltip]="statusHint()"
-      >
-        <span class="dot" aria-hidden="true"></span>
-        <span class="status-label">{{ statusLabel() }}</span>
+      <span class="status"
+          role="status"
+          [class]="'status status-' + _status"
+          [matTooltip]="_statusHint">
+        <span class="dot"
+            aria-hidden="true"></span>
+        <span class="status-label">{{ _statusLabel }}</span>
       </span>
     </mat-toolbar>
 
-    @if (status() !== 'online' && status() !== 'connecting') {
-      <div class="banner" role="alert">
-        {{ statusHint() }}
+    @if (_status !== 'online' && _status !== 'connecting') {
+      <div class="banner"
+          role="alert">
+        {{ _statusHint }}
       </div>
     }
 
@@ -62,6 +61,17 @@ import { connectionFeature } from './store/connection/connection.reducer';
     </main>
   `,
   styleUrl: './app.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    MatToolbarModule,
+    MatButtonModule,
+    MatIconModule,
+    MatBadgeModule,
+    MatTooltipModule,
+    RouterLink,
+    RouterLinkActive,
+    RouterOutlet,
+  ],
 })
 export class App {
   private readonly store = inject(Store);

@@ -15,27 +15,28 @@ export interface PromptData {
 
 @Component({
   selector: 'app-prompt-dialog',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    ReactiveFormsModule,
-    MatDialogModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
-  ],
   template: `
+    @let _invalid = invalid();
+
     <h2 mat-dialog-title>{{ data.title }}</h2>
     <form (ngSubmit)="submit()">
       <mat-dialog-content>
         <mat-form-field appearance="outline">
           <mat-label>{{ data.label }}</mat-label>
-          <input matInput [formControl]="control" maxlength="60" cdkFocusInitial />
+          <input maxlength="60"
+              matInput
+              [formControl]="control"
+              cdkFocusInitial />
           <mat-error>Required, up to 60 characters</mat-error>
         </mat-form-field>
       </mat-dialog-content>
       <mat-dialog-actions align="end">
-        <button mat-button type="button" mat-dialog-close>Cancel</button>
-        <button mat-flat-button type="submit" [disabled]="invalid()">{{ data.confirm }}</button>
+        <button type="button"
+            mat-button
+            mat-dialog-close>Cancel</button>
+        <button type="submit"
+            [disabled]="_invalid"
+            mat-flat-button>{{ data.confirm }}</button>
       </mat-dialog-actions>
     </form>
   `,
@@ -45,6 +46,14 @@ export interface PromptData {
       min-width: 260px;
     }
   `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+  ],
 })
 export class PromptDialog {
   protected readonly data = inject<PromptData>(MAT_DIALOG_DATA);

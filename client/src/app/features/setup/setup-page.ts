@@ -27,19 +27,19 @@ import { ItemDialog, type ItemDialogData } from './item-dialog';
 
 @Component({
   selector: 'app-setup-page',
+  templateUrl: './setup-page.html',
+  styleUrl: './setup-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatButtonModule,
     MatChipsModule,
-    MatIconModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
     MatSlideToggleModule,
     MatTooltipModule,
     MoneyPipe,
   ],
-  templateUrl: './setup-page.html',
-  styleUrl: './setup-page.scss',
 })
 export class SetupPage {
   private readonly store = inject(Store);

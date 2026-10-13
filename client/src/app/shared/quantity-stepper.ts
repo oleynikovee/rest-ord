@@ -4,25 +4,24 @@ import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-quantity-stepper',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, MatIconModule],
   template: `
-    <button
-      mat-icon-button
-      type="button"
-      (click)="valueChange.emit(value() - 1)"
-      [attr.aria-label]="'Decrease quantity of ' + label()"
-    >
-      <mat-icon>{{ value() === 1 ? 'delete' : 'remove' }}</mat-icon>
+    @let _value = value();
+    @let _label = label();
+    @let _max = max();
+
+    <button type="button"
+        [attr.aria-label]="'Decrease quantity of ' + _label"
+        (click)="valueChange.emit(_value - 1)"
+        mat-icon-button>
+      <mat-icon>{{ _value === 1 ? 'delete' : 'remove' }}</mat-icon>
     </button>
-    <span class="value" aria-live="polite">{{ value() }}</span>
-    <button
-      mat-icon-button
-      type="button"
-      [disabled]="value() >= max()"
-      (click)="valueChange.emit(value() + 1)"
-      [attr.aria-label]="'Increase quantity of ' + label()"
-    >
+    <span class="value"
+        aria-live="polite">{{ _value }}</span>
+    <button type="button"
+        [disabled]="_value >= _max"
+        [attr.aria-label]="'Increase quantity of ' + _label"
+        (click)="valueChange.emit(_value + 1)"
+        mat-icon-button>
       <mat-icon>add</mat-icon>
     </button>
   `,
@@ -37,6 +36,11 @@ import { MatIconModule } from '@angular/material/icon';
       font-variant-numeric: tabular-nums;
     }
   `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    MatButtonModule,
+    MatIconModule,
+  ],
 })
 export class QuantityStepper {
   readonly value = input.required<number>();

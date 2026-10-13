@@ -24,27 +24,36 @@ import { describeProblem } from './cart-problem';
  */
 @Component({
   selector: 'app-checkout-dialog',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatDialogModule, MatButtonModule, MatProgressSpinnerModule, MoneyPipe],
   template: `
+    @let _problems = problems();
+    @let _error = error();
+    @let _lines = lines();
+    @let _subtotal = subtotal();
+    @let _discount = discount();
+    @let _total = total();
+    @let _submitting = submitting();
+    @let _canCheckout = canCheckout();
+
     <h2 mat-dialog-title>Confirm your order</h2>
     <mat-dialog-content>
-      @if (problems().length > 0) {
-        <div class="alert" role="alert">
+      @if (_problems.length > 0) {
+        <div class="alert"
+            role="alert">
           <strong>The menu has changed.</strong> Close this window and update your cart to continue:
           <ul>
-            @for (line of problems(); track line.lineId) {
+            @for (line of _problems; track line.lineId) {
               <li>{{ line.name }}: {{ describe(line) }}</li>
             }
           </ul>
         </div>
       }
-      @if (error() && error()!.code !== 'MENU_CHANGED') {
-        <div class="alert" role="alert">{{ error()!.message }}</div>
+      @if (_error && _error.code !== 'MENU_CHANGED') {
+        <div class="alert"
+            role="alert">{{ _error.message }}</div>
       }
 
       <ul class="summary">
-        @for (line of lines(); track line.lineId) {
+        @for (line of _lines; track line.lineId) {
           <li>
             <span>{{ line.quantity }} × {{ line.name }}</span>
             <span>{{ line.lineTotal | money }}</span>
@@ -53,24 +62,31 @@ import { describeProblem } from './cart-problem';
       </ul>
       <dl class="totals">
         <dt>Subtotal</dt>
-        <dd>{{ subtotal() | money }}</dd>
-        @if (discount() > 0) {
+        <dd>{{ _subtotal | money }}</dd>
+        @if (_discount > 0) {
           <dt>Discount</dt>
-          <dd>−{{ discount() | money }}</dd>
+          <dd>−{{ _discount | money }}</dd>
         }
         <dt class="grand">Total</dt>
-        <dd class="grand">{{ total() | money }}</dd>
+        <dd class="grand">{{ _total | money }}</dd>
       </dl>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button type="button" mat-dialog-close [disabled]="submitting()">
-        {{ problems().length ? 'Review cart' : 'Cancel' }}
+      <button type="button"
+          [disabled]="_submitting"
+          mat-button
+          mat-dialog-close>
+        {{ _problems.length ? 'Review cart' : 'Cancel' }}
       </button>
-      <button mat-flat-button type="button" [disabled]="!canCheckout()" (click)="confirm()">
-        @if (submitting()) {
-          <mat-spinner diameter="18" aria-label="Placing order" />
+      <button type="button"
+          [disabled]="!_canCheckout"
+          (click)="confirm()"
+          mat-flat-button>
+        @if (_submitting) {
+          <mat-spinner diameter="18"
+              aria-label="Placing order" />
         } @else {
-          Place order · {{ total() | money }}
+          Place order · {{ _total | money }}
         }
       </button>
     </mat-dialog-actions>
@@ -116,6 +132,13 @@ import { describeProblem } from './cart-problem';
       display: inline-block;
     }
   `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    MatButtonModule,
+    MatDialogModule,
+    MatProgressSpinnerModule,
+    MoneyPipe,
+  ],
 })
 export class CheckoutDialog {
   private readonly store = inject(Store);

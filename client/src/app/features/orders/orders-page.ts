@@ -19,31 +19,33 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 
 @Component({
   selector: 'app-orders-page',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, RouterLink, MatButtonModule, MatProgressBarModule, MoneyPipe],
   template: `
+    @let _loaded = loaded();
+    @let _orders = orders();
+    @let _error = error();
+
     <div class="page">
       <h1>Orders</h1>
 
-      @if (loaded()) {
-        @for (order of orders(); track order.id) {
-          <article class="order" [class.done]="order.status === 'COMPLETED'">
+      @if (_loaded) {
+        @for (order of _orders; track order.id) {
+          <article class="order"
+              [class.done]="order.status === 'COMPLETED'">
             <header>
               <h2>#{{ order.number }}</h2>
-              <time [attr.datetime]="order.createdAt">{{
-                order.createdAt | date: 'shortTime'
-              }}</time>
-              <span class="status" [class]="'status status-' + order.status" aria-live="polite">
+              <time [attr.datetime]="order.createdAt">{{ order.createdAt | date: 'shortTime' }}</time>
+              <span class="status"
+                  aria-live="polite"
+                  [class]="'status status-' + order.status">
                 {{ label(order.status) }}
               </span>
             </header>
-            <mat-progress-bar
-              mode="determinate"
-              [value]="progress(order.status)"
-              [attr.aria-label]="'Order ' + order.number + ' progress'"
-            />
+            <mat-progress-bar mode="determinate"
+                [value]="progress(order.status)"
+                [attr.aria-label]="'Order ' + order.number + ' progress'" />
             <ul class="lines">
-              @for (line of order.lines; track line.itemId + ':' + line.unitPrice) {
+              <!-- Order lines have no guaranteed unique id. -->
+              @for (line of order.lines; track $index) {
                 <li>
                   <span>{{ line.quantity }} × {{ line.name }}</span>
                   <span>{{ line.lineTotal | money }}</span>
@@ -60,17 +62,23 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
         } @empty {
           <div class="page-error">
             <p>No orders yet.</p>
-            <a mat-flat-button routerLink="/menu">Go to the menu</a>
+            <a mat-flat-button
+                routerLink="/menu">Go to the menu</a>
           </div>
         }
-      } @else if (error()) {
-        <div class="page-error" role="alert">
-          <p>We couldn't load the orders. {{ error()!.message }}</p>
-          <button mat-flat-button type="button" (click)="retry()">Try again</button>
+      } @else if (_error) {
+        <div class="page-error"
+            role="alert">
+          <p>We couldn't load the orders. {{ _error.message }}</p>
+          <button type="button"
+              (click)="retry()"
+              mat-flat-button>Try again</button>
         </div>
       } @else {
-        @for (i of [1, 2, 3]; track i) {
-          <div class="order skeleton" style="height: 160px" aria-hidden="true"></div>
+        @for (i of [1, 2, 3]; track $index) {
+          <div class="order skeleton"
+              style="height: 160px"
+              aria-hidden="true"></div>
         }
       }
     </div>
@@ -152,6 +160,14 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
       color: var(--mat-sys-on-surface-variant);
     }
   `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    MatButtonModule,
+    MatProgressBarModule,
+    DatePipe,
+    RouterLink,
+    MoneyPipe,
+  ],
 })
 export class OrdersPage {
   private readonly store = inject(Store);

@@ -21,28 +21,28 @@ export interface ItemDialogData {
 
 @Component({
   selector: 'app-item-dialog',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    ReactiveFormsModule,
-    MatDialogModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatCheckboxModule,
-  ],
   template: `
+    @let _openPrice = openPrice();
+    @let _invalid = invalid();
+
     <h2 mat-dialog-title>{{ data.item ? 'Edit item' : 'New item' }}</h2>
-    <form [formGroup]="form" (ngSubmit)="submit()">
+    <form [formGroup]="form"
+        (ngSubmit)="submit()">
       <mat-dialog-content class="fields">
         <mat-form-field appearance="outline">
           <mat-label>Name</mat-label>
-          <input matInput formControlName="name" maxlength="100" cdkFocusInitial />
+          <input maxlength="100"
+              matInput
+              formControlName="name"
+              cdkFocusInitial />
           <mat-error>Required</mat-error>
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Description</mat-label>
-          <textarea matInput formControlName="description" maxlength="300" rows="2"></textarea>
+          <textarea maxlength="300"
+              rows="2"
+              matInput
+              formControlName="description"></textarea>
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Category</mat-label>
@@ -53,26 +53,28 @@ export interface ItemDialogData {
           </mat-select>
         </mat-form-field>
         <mat-checkbox formControlName="openPrice">Open price (entered when ordering)</mat-checkbox>
-        @if (!openPrice()) {
+        @if (!_openPrice) {
           <mat-form-field appearance="outline">
             <mat-label>Price</mat-label>
             <span matTextPrefix>$&nbsp;</span>
-            <input
-              matInput
-              type="number"
-              inputmode="decimal"
-              min="0"
-              step="0.01"
-              formControlName="price"
-            />
+            <input type="number"
+                inputmode="decimal"
+                min="0"
+                step="0.01"
+                matInput
+                formControlName="price" />
             <mat-error>Enter a price from 0 to 10 000</mat-error>
           </mat-form-field>
         }
         <mat-checkbox formControlName="available">Available</mat-checkbox>
       </mat-dialog-content>
       <mat-dialog-actions align="end">
-        <button mat-button type="button" mat-dialog-close>Cancel</button>
-        <button mat-flat-button type="submit" [disabled]="invalid()">Save</button>
+        <button type="button"
+            mat-button
+            mat-dialog-close>Cancel</button>
+        <button type="submit"
+            [disabled]="_invalid"
+            mat-flat-button>Save</button>
       </mat-dialog-actions>
     </form>
   `,
@@ -87,6 +89,16 @@ export interface ItemDialogData {
       margin-bottom: 8px;
     }
   `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+  ],
 })
 export class ItemDialog {
   protected readonly data = inject<ItemDialogData>(MAT_DIALOG_DATA);

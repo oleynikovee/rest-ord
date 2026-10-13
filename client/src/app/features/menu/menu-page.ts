@@ -42,21 +42,21 @@ export const ROW_HEIGHT = 72;
 
 @Component({
   selector: 'app-menu-page',
+  templateUrl: './menu-page.html',
+  styleUrl: './menu-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ScrollingModule,
-    MatSidenavModule,
+    MatButtonModule,
     MatChipsModule,
     MatFormFieldModule,
-    MatInputModule,
     MatIconModule,
-    MatButtonModule,
+    MatInputModule,
+    MatSidenavModule,
     MoneyPipe,
-    MenuItemRow,
     CartPanel,
+    MenuItemRow,
   ],
-  templateUrl: './menu-page.html',
-  styleUrl: './menu-page.scss',
 })
 export class MenuPage {
   private readonly store = inject(Store);

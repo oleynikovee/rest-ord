@@ -7,45 +7,40 @@ import { QuantityStepper } from '../../shared/quantity-stepper';
 
 @Component({
   selector: 'app-menu-item-row',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, MatIconModule, MoneyPipe, QuantityStepper],
   template: `
+    @let _item = item();
+    @let _quantity = quantity();
+
     <div class="info">
-      <div class="name">{{ item().name }}</div>
-      <div class="description">{{ item().description }}</div>
+      <div class="name">{{ _item.name }}</div>
+      <div class="description">{{ _item.description }}</div>
     </div>
     <div class="price">
-      @if (item().openPrice) {
+      @if (_item.openPrice) {
         <span class="tag">Open price</span>
       } @else {
-        {{ item().price | money }}
+        {{ _item.price | money }}
       }
     </div>
     <div class="action">
-      @if (!item().available) {
+      @if (!_item.available) {
         <span class="sold-out">Sold out</span>
-      } @else if (item().openPrice) {
-        <button
-          mat-stroked-button
-          type="button"
-          (click)="add.emit()"
-          [attr.aria-label]="'Add ' + item().name"
-        >
-          {{ quantity() ? 'Add · ' + quantity() + ' in cart' : 'Add' }}
+      } @else if (_item.openPrice) {
+        <button type="button"
+            [attr.aria-label]="'Add ' + _item.name"
+            (click)="add.emit()"
+            mat-stroked-button>
+          {{ _quantity ? 'Add · ' + _quantity + ' in cart' : 'Add' }}
         </button>
-      } @else if (quantity() > 0) {
-        <app-quantity-stepper
-          [value]="quantity()"
-          [label]="item().name"
-          (valueChange)="quantityChange.emit($event)"
-        />
+      } @else if (_quantity > 0) {
+        <app-quantity-stepper [value]="_quantity"
+            [label]="_item.name"
+            (valueChange)="quantityChange.emit($event)" />
       } @else {
-        <button
-          mat-flat-button
-          type="button"
-          (click)="add.emit()"
-          [attr.aria-label]="'Add ' + item().name"
-        >
+        <button type="button"
+            [attr.aria-label]="'Add ' + _item.name"
+            (click)="add.emit()"
+            mat-flat-button>
           Add
         </button>
       }
@@ -126,7 +121,16 @@ import { QuantityStepper } from '../../shared/quantity-stepper';
       }
     }
   `,
-  host: { '[class.unavailable]': '!item().available' },
+  host: {
+    '[class.unavailable]': '!item().available',
+  },
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    MatButtonModule,
+    MatIconModule,
+    MoneyPipe,
+    QuantityStepper,
+  ],
 })
 export class MenuItemRow {
   readonly item = input.required<MenuItem>();

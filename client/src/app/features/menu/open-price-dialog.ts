@@ -16,50 +16,45 @@ export interface OpenPriceResult {
 /** Asks for the price (and quantity) of an open-price item when it is added to the order. */
 @Component({
   selector: 'app-open-price-dialog',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    ReactiveFormsModule,
-    MatDialogModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
-  ],
   template: `
+    @let _invalid = invalid();
+
     <h2 mat-dialog-title>{{ item.name }}</h2>
-    <form [formGroup]="form" (ngSubmit)="submit()">
+    <form [formGroup]="form"
+        (ngSubmit)="submit()">
       <mat-dialog-content>
         <p class="hint">This item has no fixed price. Enter the agreed price.</p>
         <mat-form-field appearance="outline">
           <mat-label>Price</mat-label>
           <span matTextPrefix>$&nbsp;</span>
-          <input
-            matInput
-            type="number"
-            inputmode="decimal"
-            min="0.01"
-            step="0.01"
-            formControlName="price"
-            cdkFocusInitial
-          />
+          <input type="number"
+              inputmode="decimal"
+              min="0.01"
+              step="0.01"
+              matInput
+              formControlName="price"
+              cdkFocusInitial />
           <mat-error>Enter a price from 0.01 to 10 000</mat-error>
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Quantity</mat-label>
-          <input
-            matInput
-            type="number"
-            inputmode="numeric"
-            min="1"
-            max="99"
-            step="1"
-            formControlName="quantity"
-          />
+          <input type="number"
+              inputmode="numeric"
+              min="1"
+              max="99"
+              step="1"
+              matInput
+              formControlName="quantity" />
           <mat-error>From 1 to 99</mat-error>
         </mat-form-field>
       </mat-dialog-content>
       <mat-dialog-actions align="end">
-        <button mat-button type="button" mat-dialog-close>Cancel</button>
-        <button mat-flat-button type="submit" [disabled]="invalid()">Add to cart</button>
+        <button type="button"
+            mat-button
+            mat-dialog-close>Cancel</button>
+        <button type="submit"
+            [disabled]="_invalid"
+            mat-flat-button>Add to cart</button>
       </mat-dialog-actions>
     </form>
   `,
@@ -72,6 +67,14 @@ export interface OpenPriceResult {
       color: var(--mat-sys-on-surface-variant);
     }
   `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+  ],
 })
 export class OpenPriceDialog {
   protected readonly item = inject<MenuItem>(MAT_DIALOG_DATA);

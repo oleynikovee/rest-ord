@@ -1,3 +1,10 @@
+@let _loaded = loaded();
+@let _loadError = loadError();
+@let _categories = categories();
+@let _selected = selected();
+@let _search = search();
+@let _items = items();
+
 <div class="page">
   <header class="page-header">
     <h1>Menu setup</h1>
@@ -6,83 +13,84 @@
     </p>
   </header>
 
-  @if (loaded()) {
-    <section class="categories" aria-label="Categories">
-      <mat-chip-listbox aria-label="Category" hideSingleSelectionIndicator class="chips">
-        @for (category of categories(); track category.id) {
-          <mat-chip-option
-            [selected]="selected()?.id === category.id"
-            (click)="select(category.id)"
-          >
+  @if (_loaded) {
+    <section class="categories"
+        aria-label="Categories">
+      <mat-chip-listbox class="chips"
+          aria-label="Category"
+          hideSingleSelectionIndicator>
+        @for (category of _categories; track category.id) {
+          <mat-chip-option [selected]="_selected?.id === category.id"
+              (click)="select(category.id)">
             {{ category.name }}
           </mat-chip-option>
         }
       </mat-chip-listbox>
       <div class="category-actions">
-        <button mat-stroked-button type="button" (click)="addCategory()">
+        <button type="button"
+            (click)="addCategory()"
+            mat-stroked-button>
           <mat-icon>add</mat-icon> Category
         </button>
-        @if (selected()) {
-          <button mat-button type="button" (click)="renameCategory()">Rename</button>
-          <button mat-button type="button" (click)="deleteCategory()">Delete</button>
+        @if (_selected) {
+          <button type="button"
+              (click)="renameCategory()"
+              mat-button>Rename</button>
+          <button type="button"
+              (click)="deleteCategory()"
+              mat-button>Delete</button>
         }
       </div>
     </section>
 
-    @if (selected(); as category) {
-      <section class="items" [attr.aria-label]="category.name + ' items'">
+    @if (_selected; as category) {
+      <section class="items"
+          [attr.aria-label]="category.name + ' items'">
         <div class="items-toolbar">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search">
-            <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+          <mat-form-field class="search"
+              appearance="outline"
+              subscriptSizing="dynamic">
+            <mat-icon aria-hidden="true"
+                matPrefix>search</mat-icon>
             <mat-label>Search in {{ category.name }}</mat-label>
-            <input
-              matInput
-              type="search"
-              [value]="search()"
-              (input)="search.set($any($event.target).value)"
-            />
+            <input type="search"
+                [value]="_search"
+                (input)="search.set($any($event.target).value)"
+                matInput />
           </mat-form-field>
-          <button mat-flat-button type="button" (click)="addItem()">
+          <button type="button"
+              (click)="addItem()"
+              mat-flat-button>
             <mat-icon>add</mat-icon> Item
           </button>
         </div>
 
         <ul class="list">
-          @for (item of items(); track item.id) {
+          @for (item of _items; track item.id) {
             <li class="item">
               <div class="info">
                 <div class="name">{{ item.name }}</div>
                 <div class="price">{{ item.openPrice ? 'Open price' : (item.price | money) }}</div>
               </div>
-              <mat-slide-toggle
-                [checked]="item.available"
-                (change)="setAvailable(item, $event.checked)"
-                [attr.aria-label]="'Available: ' + item.name"
-                >Available</mat-slide-toggle
-              >
-              <mat-slide-toggle
-                [checked]="item.openPrice"
-                (change)="setOpenPrice(item, $event.checked)"
-                [attr.aria-label]="'Open price: ' + item.name"
-                >Open price</mat-slide-toggle
-              >
+              <mat-slide-toggle [checked]="item.available"
+                  [attr.aria-label]="'Available: ' + item.name"
+                  (change)="setAvailable(item, $event.checked)">Available</mat-slide-toggle>
+              <mat-slide-toggle [checked]="item.openPrice"
+                  [attr.aria-label]="'Open price: ' + item.name"
+                  (change)="setOpenPrice(item, $event.checked)">Open price</mat-slide-toggle>
               <div class="buttons">
-                <button
-                  mat-icon-button
-                  type="button"
-                  (click)="editItem(item)"
-                  [attr.aria-label]="'Edit ' + item.name"
-                  matTooltip="Edit"
-                >
+                <button type="button"
+                    [attr.aria-label]="'Edit ' + item.name"
+                    (click)="editItem(item)"
+                    mat-icon-button
+                    matTooltip="Edit">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button
-                  mat-icon-button
-                  type="button"
-                  (click)="deleteItem(item)"
-                  [attr.aria-label]="'Delete ' + item.name"
-                  matTooltip="Delete"
-                >
+                <button type="button"
+                    [attr.aria-label]="'Delete ' + item.name"
+                    (click)="deleteItem(item)"
+                    mat-icon-button
+                    matTooltip="Delete">
                   <mat-icon>delete</mat-icon>
                 </button>
               </div>
@@ -95,15 +103,20 @@
     } @else {
       <p class="empty">Create a category to start building the menu.</p>
     }
-  } @else if (loadError()) {
-    <div class="page-error" role="alert">
-      <p>We couldn't load the menu. {{ loadError()!.message }}</p>
-      <button mat-flat-button type="button" (click)="retry()">Try again</button>
+  } @else if (_loadError) {
+    <div class="page-error"
+        role="alert">
+      <p>We couldn't load the menu. {{ _loadError.message }}</p>
+      <button type="button"
+          (click)="retry()"
+          mat-flat-button>Try again</button>
     </div>
   } @else {
-    <div class="skeleton" style="height: 48px; margin-bottom: 16px"></div>
-    @for (i of [1, 2, 3, 4, 5, 6]; track i) {
-      <div class="skeleton" style="height: 56px; margin-bottom: 8px"></div>
+    <div class="skeleton"
+        style="height: 48px; margin-bottom: 16px"></div>
+    @for (i of [1, 2, 3, 4, 5, 6]; track $index) {
+      <div class="skeleton"
+          style="height: 56px; margin-bottom: 8px"></div>
     }
   }
 </div>

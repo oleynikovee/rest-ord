@@ -24,49 +24,51 @@ import { CheckoutDialog } from './checkout-dialog';
 
 @Component({
   selector: 'app-cart-panel',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FormsModule,
-    MatButtonModule,
-    MatIconModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MoneyPipe,
-    QuantityStepper,
-  ],
   template: `
+    @let _closable = closable();
+    @let _lines = lines();
+    @let _problems = problems();
+    @let _discountInput = discountInput();
+    @let _discountTooLarge = discountTooLarge();
+    @let _subtotal = subtotal();
+    @let _discount = discount();
+    @let _total = total();
+    @let _canCheckout = canCheckout();
+
     <header class="header">
       <h2>Your order</h2>
-      @if (closable()) {
-        <button
-          mat-icon-button
-          type="button"
-          class="close"
-          (click)="closed.emit()"
-          aria-label="Close cart"
-        >
+      @if (_closable) {
+        <button class="close"
+            type="button"
+            aria-label="Close cart"
+            (click)="closed.emit()"
+            mat-icon-button>
           <mat-icon>close</mat-icon>
         </button>
       }
     </header>
 
-    @if (lines().length === 0) {
+    @if (_lines.length === 0) {
       <p class="empty">Your cart is empty. Add something tasty from the menu.</p>
     } @else {
-      @if (problems().length > 0) {
-        <div class="changes" role="alert">
+      @if (_problems.length > 0) {
+        <div class="changes"
+            role="alert">
           <mat-icon aria-hidden="true">warning</mat-icon>
           <span>
-            {{ problems().length === 1 ? '1 item has' : problems().length + ' items have' }}
-            changed since you added {{ problems().length === 1 ? 'it' : 'them' }}.
+            {{ _problems.length === 1 ? '1 item has' : _problems.length + ' items have' }}
+            changed since you added {{ _problems.length === 1 ? 'it' : 'them' }}.
           </span>
-          <button mat-stroked-button type="button" (click)="applyChanges()">Update cart</button>
+          <button type="button"
+              (click)="applyChanges()"
+              mat-stroked-button>Update cart</button>
         </div>
       }
 
       <ul class="lines">
-        @for (line of lines(); track line.lineId) {
-          <li class="line" [class.problem]="line.problem">
+        @for (line of _lines; track line.lineId) {
+          <li class="line"
+              [class.problem]="line.problem">
             <div class="line-main">
               <div class="line-name">
                 {{ line.name }}
@@ -79,53 +81,66 @@ import { CheckoutDialog } from './checkout-dialog';
                 <div class="line-problem">{{ describe(line) }}</div>
               }
             </div>
-            <app-quantity-stepper
-              [value]="line.quantity"
-              [label]="line.name"
-              (valueChange)="setQuantity(line.lineId, $event)"
-            />
+            <app-quantity-stepper [value]="line.quantity"
+                [label]="line.name"
+                (valueChange)="setQuantity(line.lineId, $event)" />
             <div class="line-total">{{ line.lineTotal | money }}</div>
           </li>
         }
       </ul>
 
-      <mat-form-field appearance="outline" class="discount" subscriptSizing="dynamic">
+      <mat-form-field class="discount"
+          appearance="outline"
+          subscriptSizing="dynamic">
         <mat-label>Discount</mat-label>
         <span matTextPrefix>$&nbsp;</span>
-        <input
-          matInput
-          type="number"
-          inputmode="decimal"
-          min="0"
-          step="0.01"
-          [ngModel]="discountInput()"
-          (ngModelChange)="setDiscount($event)"
-        />
-        @if (discountTooLarge()) {
+        <input type="number"
+            inputmode="decimal"
+            min="0"
+            step="0.01"
+            matInput
+            [ngModel]="_discountInput"
+            (ngModelChange)="setDiscount($event)" />
+        @if (_discountTooLarge) {
           <mat-hint class="error">The discount cannot exceed the subtotal</mat-hint>
         }
       </mat-form-field>
 
       <dl class="totals">
         <dt>Subtotal</dt>
-        <dd>{{ subtotal() | money }}</dd>
-        @if (discount() > 0) {
+        <dd>{{ _subtotal | money }}</dd>
+        @if (_discount > 0) {
           <dt>Discount</dt>
-          <dd>−{{ discount() | money }}</dd>
+          <dd>−{{ _discount | money }}</dd>
         }
         <dt class="grand">Total</dt>
-        <dd class="grand">{{ total() | money }}</dd>
+        <dd class="grand">{{ _total | money }}</dd>
       </dl>
 
       <div class="actions">
-        <button mat-button type="button" (click)="clear()">Clear</button>
-        <button mat-flat-button type="button" [disabled]="!canCheckout()" (click)="checkout()">
-          Checkout · {{ total() | money }}
+        <button type="button"
+            (click)="clear()"
+            mat-button>Clear</button>
+        <button type="button"
+            [disabled]="!_canCheckout"
+            (click)="checkout()"
+            mat-flat-button>
+          Checkout · {{ _total | money }}
         </button>
       </div>
     }
   `,
   styleUrl: './cart-panel.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    FormsModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MoneyPipe,
+    QuantityStepper,
+  ],
 })
 export class CartPanel {
   private readonly store = inject(Store);
