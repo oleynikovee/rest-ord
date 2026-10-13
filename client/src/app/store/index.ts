@@ -1,6 +1,8 @@
 import type { EnvironmentProviders } from '@angular/core';
 import { provideEffects } from '@ngrx/effects';
 import { provideStore } from '@ngrx/store';
+import * as authEffects from './auth/auth.effects';
+import { authFeature } from './auth/auth.reducer';
 import * as cartEffects from './cart/cart.effects';
 import { cartFeature } from './cart/cart.reducer';
 import * as connectionEffects from './connection/connection.effects';
@@ -14,6 +16,7 @@ export function provideAppStore(): EnvironmentProviders[] {
   return [
     provideStore(
       {
+        [authFeature.name]: authFeature.reducer,
         [menuFeature.name]: menuFeature.reducer,
         [cartFeature.name]: cartFeature.reducer,
         [ordersFeature.name]: ordersFeature.reducer,
@@ -28,6 +31,6 @@ export function provideAppStore(): EnvironmentProviders[] {
         },
       },
     ),
-    provideEffects(menuEffects, cartEffects, ordersEffects, connectionEffects),
+    provideEffects(authEffects, menuEffects, cartEffects, ordersEffects, connectionEffects),
   ];
 }

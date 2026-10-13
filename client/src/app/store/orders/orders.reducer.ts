@@ -2,6 +2,7 @@ import { type EntityState, createEntityAdapter } from '@ngrx/entity';
 import { createFeature, createReducer, createSelector, on } from '@ngrx/store';
 import type { ApiError } from '../../core/api-error';
 import type { Order } from '../../core/models';
+import { AuthActions } from '../auth/auth.actions';
 import { CartActions } from '../cart/cart.actions';
 import { OrdersActions } from './orders.actions';
 
@@ -36,6 +37,8 @@ export const ordersFeature = createFeature({
       ),
     ),
     on(OrdersActions.loadFailure, (state, { error }) => ({ ...state, loading: false, error })),
+    // Another user may sign in on this device next: never keep someone else's orders.
+    on(AuthActions.logoutSuccess, AuthActions.sessionExpired, () => initialState),
     on(OrdersActions.orderUpserted, CartActions.checkoutSuccess, (state, { order }) =>
       isNewer(state, order) ? adapter.upsertOne(order, state) : state,
     ),

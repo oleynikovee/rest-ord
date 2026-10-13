@@ -2,10 +2,13 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Store } from '@ngrx/store';
+import { AuthActions } from './store/auth/auth.actions';
+import { authFeature } from './store/auth/auth.reducer';
 import { selectCartCount } from './store/cart/cart.selectors';
 import { connectionFeature } from './store/connection/connection.reducer';
 
@@ -16,6 +19,9 @@ import { connectionFeature } from './store/connection/connection.reducer';
     @let _status = status();
     @let _statusLabel = statusLabel();
     @let _statusHint = statusHint();
+    @let _user = user();
+    @let _authStatus = authStatus();
+    @let _isAdmin = isAdmin();
 
     <mat-toolbar class="toolbar">
       <a class="brand"
@@ -32,12 +38,16 @@ import { connectionFeature } from './store/connection/connection.reducer';
               [matBadgeDescription]="_cartCount + ' items in cart'"
               matBadgeOverlap="false">Menu</span>
         </a>
-        <a mat-button
-            routerLink="/orders"
-            routerLinkActive="active">Orders</a>
-        <a mat-button
-            routerLink="/setup"
-            routerLinkActive="active">Setup</a>
+        @if (_user) {
+          <a mat-button
+              routerLink="/orders"
+              routerLinkActive="active">{{ _isAdmin ? 'Orders' : 'My orders' }}</a>
+        }
+        @if (_isAdmin) {
+          <a mat-button
+              routerLink="/setup"
+              routerLinkActive="active">Setup</a>
+        }
       </nav>
       <span class="status"
           role="status"
@@ -47,6 +57,30 @@ import { connectionFeature } from './store/connection/connection.reducer';
             aria-hidden="true"></span>
         <span class="status-label">{{ _statusLabel }}</span>
       </span>
+      @if (_user) {
+        <button class="account"
+            type="button"
+            [attr.aria-label]="'Account: ' + _user.name"
+            mat-icon-button
+            [matMenuTriggerFor]="accountMenu">
+          <mat-icon>account_circle</mat-icon>
+        </button>
+        <mat-menu #accountMenu="matMenu">
+          <div class="account-info">
+            <div class="account-name">{{ _user.name }}</div>
+            <div class="account-email">{{ _user.email }}</div>
+          </div>
+          <button type="button"
+              (click)="logout()"
+              mat-menu-item>
+            <mat-icon>logout</mat-icon>
+            Sign out
+          </button>
+        </mat-menu>
+      } @else if (_authStatus === 'anonymous') {
+        <a mat-stroked-button
+            routerLink="/login">Sign in</a>
+      }
     </mat-toolbar>
 
     @if (_status !== 'online' && _status !== 'connecting') {
@@ -63,10 +97,11 @@ import { connectionFeature } from './store/connection/connection.reducer';
   styleUrl: './app.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    MatToolbarModule,
+    MatBadgeModule,
     MatButtonModule,
     MatIconModule,
-    MatBadgeModule,
+    MatMenuModule,
+    MatToolbarModule,
     MatTooltipModule,
     RouterLink,
     RouterLinkActive,
@@ -78,6 +113,9 @@ export class App {
 
   protected readonly cartCount = this.store.selectSignal(selectCartCount);
   protected readonly status = this.store.selectSignal(connectionFeature.selectStatus);
+  protected readonly user = this.store.selectSignal(authFeature.selectUser);
+  protected readonly authStatus = this.store.selectSignal(authFeature.selectStatus);
+  protected readonly isAdmin = this.store.selectSignal(authFeature.selectIsAdmin);
 
   protected readonly statusLabel = computed(
     () =>
@@ -99,4 +137,8 @@ export class App {
         return 'Live updates are paused while we reconnect. Prices and availability are re-checked before your order is placed.';
     }
   });
+
+  protected logout(): void {
+    this.store.dispatch(AuthActions.logout());
+  }
 }

@@ -49,6 +49,13 @@ export class RealtimeService implements OnDestroy {
     share(),
   );
 
+  /** Re-handshakes so the server re-reads the session cookie and updates the socket's rooms. */
+  reconnect(): void {
+    if (!this.socket) return;
+    this.socket.disconnect();
+    this.socket.connect();
+  }
+
   ngOnDestroy(): void {
     this.socket?.disconnect();
   }

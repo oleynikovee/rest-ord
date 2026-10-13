@@ -4,9 +4,8 @@ import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
 import {
   catchError,
-  debounceTime,
+  distinctUntilChanged,
   exhaustMap,
-  filter,
   from,
   map,
   of,
@@ -124,9 +123,9 @@ export const notifyCheckoutFailure = createEffect(
 export const persistCart = createEffect(
   (store = inject(Store)) =>
     store.select(cartFeature.selectCartState).pipe(
-      debounceTime(200),
+      // Written synchronously: a reload right after an edit must not lose it.
       map(({ lines, discount, checkoutKey }) => JSON.stringify({ lines, discount, checkoutKey })),
-      filter(Boolean),
+      distinctUntilChanged(),
       tap((json) => {
         try {
           localStorage.setItem(CART_STORAGE_KEY, json);

@@ -1,7 +1,10 @@
 import { inject } from '@angular/core';
 import { Actions, ROOT_EFFECTS_INIT, createEffect, ofType } from '@ngrx/effects';
-import type { Action } from '@ngrx/store';
+import { concatLatestFrom } from '@ngrx/operators';
+import { type Action, Store } from '@ngrx/store';
 import { filter, fromEvent, map, merge, mergeMap, of, switchMap } from 'rxjs';
+import { AuthActions } from '../auth/auth.actions';
+import { authFeature } from '../auth/auth.reducer';
 import { MenuActions, MenuLiveActions } from '../menu/menu.actions';
 import { OrdersActions } from '../orders/orders.actions';
 import { ConnectionActions } from './connection.actions';
@@ -12,7 +15,18 @@ export const loadInitialData = createEffect(
   (actions$ = inject(Actions)) =>
     actions$.pipe(
       ofType(ROOT_EFFECTS_INIT),
-      mergeMap(() => [MenuActions.load(), OrdersActions.load()]),
+      map(() => MenuActions.load()),
+    ),
+  { functional: true },
+);
+
+/** Orders need a session: load them once it is known, and again after every sign-in. */
+export const loadOrdersForSession = createEffect(
+  (actions$ = inject(Actions)) =>
+    actions$.pipe(
+      ofType(AuthActions.sessionLoaded, AuthActions.signInSuccess),
+      filter((action) => action.user !== null),
+      map(() => OrdersActions.load()),
     ),
   { functional: true },
 );
@@ -51,11 +65,14 @@ export const realtimeEvents = createEffect(
 
 /** Events missed while disconnected are recovered by re-fetching the snapshots. */
 export const resyncAfterReconnect = createEffect(
-  (actions$ = inject(Actions)) =>
+  (actions$ = inject(Actions), store = inject(Store)) =>
     actions$.pipe(
       ofType(ConnectionActions.connected),
       filter(({ reconnect }) => reconnect),
-      mergeMap(() => [MenuActions.load(), OrdersActions.load()]),
+      concatLatestFrom(() => store.select(authFeature.selectStatus)),
+      mergeMap(([, status]) =>
+        status === 'authenticated' ? [MenuActions.load(), OrdersActions.load()] : [MenuActions.load()],
+      ),
     ),
   { functional: true },
 );

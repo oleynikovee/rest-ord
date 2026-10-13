@@ -5,9 +5,11 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
+import { RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { MoneyPipe, toCents } from '../../shared/money.pipe';
 import { QuantityStepper } from '../../shared/quantity-stepper';
+import { authFeature } from '../../store/auth/auth.reducer';
 import { CartActions } from '../../store/cart/cart.actions';
 import { cartFeature } from '../../store/cart/cart.reducer';
 import {
@@ -34,6 +36,7 @@ import { CheckoutDialog } from './checkout-dialog';
     @let _discount = discount();
     @let _total = total();
     @let _canCheckout = canCheckout();
+    @let _signedIn = signedIn();
 
     <header class="header">
       <h2>Your order</h2>
@@ -121,12 +124,19 @@ import { CheckoutDialog } from './checkout-dialog';
         <button type="button"
             (click)="clear()"
             mat-button>Clear</button>
-        <button type="button"
-            [disabled]="!_canCheckout"
-            (click)="checkout()"
-            mat-flat-button>
-          Checkout · {{ _total | money }}
-        </button>
+        @if (_signedIn) {
+          <button type="button"
+              [disabled]="!_canCheckout"
+              (click)="checkout()"
+              mat-flat-button>
+            Checkout · {{ _total | money }}
+          </button>
+        } @else {
+          <!-- The cart is kept in localStorage, so nothing is lost while signing in. -->
+          <a mat-flat-button
+              routerLink="/login"
+              [queryParams]="{ returnUrl: '/menu' }">Sign in to order</a>
+        }
       </div>
     }
   `,
@@ -138,6 +148,7 @@ import { CheckoutDialog } from './checkout-dialog';
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    RouterLink,
     MoneyPipe,
     QuantityStepper,
   ],
@@ -156,6 +167,8 @@ export class CartPanel {
   protected readonly discount = this.store.selectSignal(cartFeature.selectDiscount);
   protected readonly discountTooLarge = this.store.selectSignal(selectDiscountTooLarge);
   protected readonly canCheckout = this.store.selectSignal(selectCanCheckout);
+  private readonly authStatus = this.store.selectSignal(authFeature.selectStatus);
+  protected readonly signedIn = computed(() => this.authStatus() === 'authenticated');
   private readonly items = this.store.selectSignal(selectItemEntities);
 
   protected readonly discountInput = computed(() =>

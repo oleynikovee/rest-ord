@@ -31,6 +31,10 @@ services:
       DATABASE_URL: postgres://restaurant:restaurant@postgres:5432/restaurant
       REDIS_URL: redis://redis:6379
       STATUS_STEP_SECONDS: 8
+      # Demo values: set real secrets via environment or an .env file outside git.
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production-please}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@trattoria.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin12345}
     ports:
       - '8080:3000'
     depends_on:

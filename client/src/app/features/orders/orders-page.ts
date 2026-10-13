@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { ORDER_STATUSES, type OrderStatus } from '../../core/models';
 import { MoneyPipe } from '../../shared/money.pipe';
+import { authFeature } from '../../store/auth/auth.reducer';
 import { OrdersActions } from '../../store/orders/orders.actions';
 import { ordersFeature } from '../../store/orders/orders.reducer';
 
@@ -23,9 +24,10 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
     @let _loaded = loaded();
     @let _orders = orders();
     @let _error = error();
+    @let _isAdmin = isAdmin();
 
     <div class="page">
-      <h1>Orders</h1>
+      <h1>{{ _isAdmin ? 'All orders' : 'My orders' }}</h1>
 
       @if (_loaded) {
         @for (order of _orders; track order.id) {
@@ -33,6 +35,9 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
               [class.done]="order.status === 'COMPLETED'">
             <header>
               <h2>#{{ order.number }}</h2>
+              @if (_isAdmin && order.customerName) {
+                <span class="customer">{{ order.customerName }}</span>
+              }
               <time [attr.datetime]="order.createdAt">{{ order.createdAt | date: 'shortTime' }}</time>
               <span class="status"
                   aria-live="polite"
@@ -115,6 +120,9 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
       margin: 0;
       font: var(--mat-sys-title-medium);
     }
+    .customer {
+      font: var(--mat-sys-label-large);
+    }
     time {
       color: var(--mat-sys-on-surface-variant);
     }
@@ -175,6 +183,7 @@ export class OrdersPage {
   protected readonly orders = this.store.selectSignal(ordersFeature.selectAll);
   protected readonly loaded = this.store.selectSignal(ordersFeature.selectLoaded);
   protected readonly error = this.store.selectSignal(ordersFeature.selectError);
+  protected readonly isAdmin = this.store.selectSignal(authFeature.selectIsAdmin);
 
   protected label(status: OrderStatus): string {
     return STATUS_LABELS[status];

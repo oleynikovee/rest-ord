@@ -4,10 +4,14 @@ import { type MonoTypeOperatorFunction, type Observable, retry, timer } from 'rx
 import type {
   Category,
   CreateOrderRequest,
+  CurrentSessionResponse,
+  LoginRequest,
   MenuItem,
   MenuItemInput,
   MenuSnapshot,
   Order,
+  RegisterRequest,
+  SessionResponse,
 } from './models';
 
 /** Retries idempotent GETs on network / gateway errors with exponential backoff. */
@@ -23,6 +27,22 @@ const retryReads = <T>(): MonoTypeOperatorFunction<T> =>
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly http = inject(HttpClient);
+
+  getSession(): Observable<CurrentSessionResponse> {
+    return this.http.get<CurrentSessionResponse>('/api/auth/me').pipe(retryReads());
+  }
+
+  login(request: LoginRequest): Observable<SessionResponse> {
+    return this.http.post<SessionResponse>('/api/auth/login', request);
+  }
+
+  register(request: RegisterRequest): Observable<SessionResponse> {
+    return this.http.post<SessionResponse>('/api/auth/register', request);
+  }
+
+  logout(): Observable<void> {
+    return this.http.post<void>('/api/auth/logout', null);
+  }
 
   getMenu(): Observable<MenuSnapshot> {
     return this.http.get<MenuSnapshot>('/api/menu').pipe(retryReads());
