@@ -23,6 +23,10 @@ export class RealtimeService implements OnDestroy {
         new Observable<RealtimeEvent>((subscriber) => {
           const socket = io({
             path: '/socket.io',
+            // WebSocket first: one connection, so any API replica can serve it. Long-polling
+            // stays as a fallback for networks that block WebSockets (sticky cookie at the edge).
+            transports: ['websocket', 'polling'],
+            tryAllTransports: true,
             reconnectionDelay: 1000,
             reconnectionDelayMax: 10000,
             randomizationFactor: 0.5,

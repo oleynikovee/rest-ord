@@ -110,3 +110,48 @@
   margin-top: auto;
   padding-top: 8px;
 }
+
+.promo-form {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+
+  button {
+    margin-top: 8px;
+  }
+}
+
+.promo-field {
+  flex: 1;
+}
+
+.promo-note {
+  margin: 0;
+  font: var(--mat-sys-body-small);
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.promo-applied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 4px 8px 12px;
+  border-radius: 12px;
+  background: var(--mat-sys-secondary-container);
+  color: var(--mat-sys-on-secondary-container);
+}
+
+.promo-code {
+  font: var(--mat-sys-title-small);
+  letter-spacing: 0.04em;
+}
+
+.promo-description {
+  font: var(--mat-sys-body-small);
+}
+
+.promo-hint {
+  font: var(--mat-sys-label-medium);
+  color: var(--mat-sys-error);
+}
