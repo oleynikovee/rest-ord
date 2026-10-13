@@ -1,8 +1,19 @@
 import { randomUUID } from 'node:crypto';
-import { type NewOrder, nextStatus, type Order } from '../../domain/models.js';
+import {
+  type CreateOrderResult,
+  type NewOrder,
+  nextStatus,
+  type Order,
+  type PromoRedemption,
+} from '../../domain/models.js';
 import { type OrdersListQuery, OrdersRepository } from '../../domain/ports.js';
+import type { MemoryPromoRepository } from './memory-promo.repository.js';
 
 export class MemoryOrdersRepository extends OrdersRepository {
+  constructor(private readonly promos: MemoryPromoRepository) {
+    super();
+  }
+
   private readonly orders = new Map<string, Order>();
   private readonly byKey = new Map<string, string>();
   private sequence = 0;
@@ -26,9 +37,19 @@ export class MemoryOrdersRepository extends OrdersRepository {
     return id ? this.findById(id) : null;
   }
 
-  async create(input: NewOrder, idempotencyKey: string): Promise<Order> {
-    const existing = await this.findByIdempotencyKey(idempotencyKey);
-    if (existing) return existing;
+  async create(
+    input: NewOrder,
+    idempotencyKey: string,
+    redemption?: PromoRedemption,
+  ): Promise<CreateOrderResult> {
+    // No await until the order is stored: the whole check-and-write is atomic in one process.
+    const existingId = this.byKey.get(idempotencyKey);
+    if (existingId) return { status: 'duplicate', order: clone(this.orders.get(existingId)!) };
+    if (redemption) {
+      const result = this.promos.redeem(redemption);
+      if (result === 'exhausted') return { status: 'promo_exhausted' };
+      if (result === 'already_used') return { status: 'promo_already_used' };
+    }
 
     const now = new Date().toISOString();
     const order: Order = {
@@ -41,7 +62,7 @@ export class MemoryOrdersRepository extends OrdersRepository {
     };
     this.orders.set(order.id, order);
     this.byKey.set(idempotencyKey, order.id);
-    return clone(order);
+    return { status: 'created', order: clone(order) };
   }
 
   async advanceStale(olderThanMs: number): Promise<Order[]> {

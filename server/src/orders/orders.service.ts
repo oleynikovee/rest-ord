@@ -3,10 +3,12 @@ import {
   ConflictException,
   Injectable,
   Logger,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import {
   ORDERS_PAGE_SIZE,
   type Order,
+  PROMO_ERRORS,
   type OrderEvent,
   type OrdersPage,
   type OrdersQuery,
@@ -20,6 +22,7 @@ import {
   OrdersRepository,
 } from '../domain/ports.js';
 import type { CreateOrderDto } from './orders.dto.js';
+import { PromoService } from '../promo/promo.service.js';
 import { priceOrder } from './pricing.js';
 
 export interface PlaceOrderResult {
@@ -37,6 +40,7 @@ export class OrdersService {
     private readonly menu: MenuRepository,
     private readonly idempotency: IdempotencyStore,
     private readonly bus: EventBus,
+    private readonly promos: PromoService,
   ) {}
 
   /** Admins see every order, customers only their own. */
@@ -82,11 +86,7 @@ export class OrdersService {
       const items = await this.menu.findItems([
         ...new Set(dto.lines.map((line) => line.itemId)),
       ]);
-      const result = priceOrder(
-        dto.lines,
-        dto.discount,
-        new Map(items.map((item) => [item.id, item])),
-      );
+      const result = priceOrder(dto.lines, new Map(items.map((item) => [item.id, item])));
 
       if (!result.ok) {
         switch (result.reason) {
@@ -96,11 +96,6 @@ export class OrdersService {
               message: 'Some items changed since you added them to the cart.',
               issues: result.issues,
             });
-          case 'discount_too_large':
-            throw new BadRequestException({
-              code: 'DISCOUNT_TOO_LARGE',
-              message: 'The discount cannot exceed the order subtotal.',
-            });
           case 'invalid_open_price':
             throw new BadRequestException({
               code: 'INVALID_OPEN_PRICE',
@@ -109,10 +104,39 @@ export class OrdersService {
         }
       }
 
-      const order = await this.orders.create(
-        { ...result.order, userId: user.id, customerName: user.name },
+      // The client never sends a discount amount: it is computed from the code here.
+      const promo = dto.promoCode
+        ? await this.promos.quote(user, dto.promoCode, result.order.subtotal)
+        : null;
+      const discount = promo?.quote.discount ?? 0;
+      const created = await this.orders.create(
+        {
+          ...result.order,
+          discount,
+          total: result.order.subtotal - discount,
+          promoCode: promo?.promo.code ?? null,
+          userId: user.id,
+          customerName: user.name,
+        },
         idempotencyKey,
+        promo ? { promoId: promo.promo.id, userId: user.id } : undefined,
       );
+      switch (created.status) {
+        case 'duplicate':
+          await this.idempotency.complete(idempotencyKey, created.order.id);
+          return { order: created.order, replayed: true };
+        case 'promo_exhausted':
+          throw new UnprocessableEntityException({
+            code: PROMO_ERRORS.exhausted,
+            message: 'This promo code has just been fully used.',
+          });
+        case 'promo_already_used':
+          throw new UnprocessableEntityException({
+            code: PROMO_ERRORS.alreadyUsed,
+            message: 'You have already used this promo code.',
+          });
+      }
+      const order = created.order;
       await this.idempotency.complete(idempotencyKey, order.id);
       this.logger.log(`Order #${order.number} placed, total ${order.total}`);
       // The order is already stored: a failed broadcast must not turn it into an error.

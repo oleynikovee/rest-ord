@@ -22,6 +22,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/setup/setup-page').then((m) => m.SetupPage),
   },
   {
+    path: 'promos',
+    title: 'Promo codes',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./features/promos/promos-page').then((m) => m.PromosPage),
+  },
+  {
     path: 'login',
     title: 'Sign in',
     loadComponent: () => import('./features/auth/login-page').then((m) => m.LoginPage),

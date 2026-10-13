@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import type { ApiErrorBody, Category, MenuChangeIssue, MenuItem } from './models';
+import type { ApiErrorBody, Category, MenuChangeIssue, MenuItem, PromoCode } from './models';
 
 /** A serialisable error that is safe to keep in the store and show to the user. */
 export interface ApiError {
@@ -8,7 +8,7 @@ export interface ApiError {
   message: string;
   issues?: MenuChangeIssue[];
   /** With 412 VERSION_CONFLICT: what the entity looks like now. */
-  current?: Category | MenuItem;
+  current?: Category | MenuItem | PromoCode;
 }
 
 type ErrorBody = Partial<ApiErrorBody>;

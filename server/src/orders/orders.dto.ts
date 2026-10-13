@@ -5,8 +5,11 @@ import {
   IsArray,
   IsBoolean,
   IsInt,
+  IsOptional,
+  IsString,
   IsUUID,
   Max,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -39,9 +42,9 @@ export class CreateOrderDto {
   @Type(() => OrderLineDto)
   lines: OrderLineDto[];
 
-  /** Fixed discount amount in cents. */
-  @IsInt()
-  @Min(0)
-  @Max(MAX_PRICE * 100)
-  discount: number;
+  /** Optional promo code; the server computes the discount. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  promoCode?: string;
 }

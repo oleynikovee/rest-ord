@@ -98,7 +98,6 @@ describe('Authentication and authorization (e2e)', () => {
     const item = items.find((i) => i.available && !i.openPrice)!;
     const order = {
       lines: [{ itemId: item.id, quantity: 1, unitPrice: item.price, openPrice: false }],
-      discount: 0,
     };
 
     const alice = request.agent(app.getHttpServer());

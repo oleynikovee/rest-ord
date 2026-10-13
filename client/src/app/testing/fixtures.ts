@@ -21,6 +21,7 @@ export const order = (patch: Partial<Order> = {}): Order => ({
   subtotal: 1000,
   discount: 0,
   total: 1000,
+  promoCode: null,
   status: 'NEW',
   createdAt: '2026-01-01T10:00:00.000Z',
   updatedAt: '2026-01-01T10:00:00.000Z',

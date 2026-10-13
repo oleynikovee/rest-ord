@@ -11,8 +11,12 @@ import type {
   MenuSnapshot,
   Order,
   OrdersPage,
+  PromoCode,
+  PromoCodeInput,
+  PromoQuote,
   RegisterRequest,
   SessionResponse,
+  ValidatePromoRequest,
 } from './models';
 
 /** Retries idempotent GETs on network / gateway errors with exponential backoff. */
@@ -52,6 +56,22 @@ export class ApiService {
 
   logout(): Observable<void> {
     return this.http.post<void>('/api/auth/logout', null);
+  }
+
+  validatePromo(request: ValidatePromoRequest): Observable<PromoQuote> {
+    return this.http.post<PromoQuote>('/api/promo-codes/validate', request);
+  }
+
+  getPromoCodes(): Observable<PromoCode[]> {
+    return this.http.get<PromoCode[]>('/api/promo-codes');
+  }
+
+  createPromoCode(input: PromoCodeInput): Observable<PromoCode> {
+    return this.http.post<PromoCode>('/api/promo-codes', input);
+  }
+
+  updatePromoCode(promo: Versioned, input: PromoCodeInput): Observable<PromoCode> {
+    return this.http.patch<PromoCode>(`/api/promo-codes/${promo.id}`, input, ifMatch(promo));
   }
 
   getMenu(): Observable<MenuSnapshot> {

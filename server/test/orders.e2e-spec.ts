@@ -31,7 +31,6 @@ describe('Menu and orders (e2e, in-memory storage)', () => {
       .set('Idempotency-Key', key)
       .send({
         lines: [{ itemId: item.id, quantity: 2, unitPrice, openPrice: false }],
-        discount: 100,
       });
 
   it('seeds a large menu', async () => {
@@ -44,7 +43,7 @@ describe('Menu and orders (e2e, in-memory storage)', () => {
     const second = await placeOrder('checkout-key-1').expect(200);
 
     expect((second.body as Order).id).toBe((first.body as Order).id);
-    expect((first.body as Order).total).toBe(item.price! * 2 - 100);
+    expect((first.body as Order).total).toBe(item.price! * 2);
 
     const orders = await customer.get('/api/orders').expect(200);
     expect((orders.body as OrdersPage).items).toHaveLength(1);
@@ -90,7 +89,7 @@ describe('Menu and orders (e2e, in-memory storage)', () => {
   it('requires an idempotency key', async () => {
     await customer
       .post('/api/orders')
-      .send({ lines: [], discount: 0 })
+      .send({ lines: [] })
       .expect(400);
   });
 

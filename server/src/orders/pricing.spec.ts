@@ -16,20 +16,16 @@ const item = (patch: Partial<MenuItem> = {}): MenuItem => ({
 const menuOf = (...items: MenuItem[]): Map<string, MenuItem> => new Map(items.map((i) => [i.id, i]));
 
 describe('priceOrder', () => {
-  it('computes subtotal, discount and total', () => {
+  it('computes line totals and the subtotal', () => {
     const result = priceOrder(
       [
         { itemId: 'a', quantity: 2, unitPrice: 1000, openPrice: false },
         { itemId: 'b', quantity: 1, unitPrice: 2550, openPrice: true },
       ],
-      500,
       menuOf(item(), item({ id: 'b', openPrice: true, price: null })),
     );
 
-    expect(result).toEqual({
-      ok: true,
-      order: expect.objectContaining({ subtotal: 4550, discount: 500, total: 4050 }),
-    });
+    expect(result).toEqual({ ok: true, order: expect.objectContaining({ subtotal: 4550 }) });
   });
 
   it('reports every item that changed since it was added to the cart', () => {
@@ -40,7 +36,6 @@ describe('priceOrder', () => {
         { itemId: 'gone', quantity: 1, unitPrice: 1000, openPrice: false },
         { itemId: 'd', quantity: 1, unitPrice: 1000, openPrice: false },
       ],
-      0,
       menuOf(
         item(),
         item({ id: 'b', available: false }),
@@ -58,19 +53,9 @@ describe('priceOrder', () => {
     ]);
   });
 
-  it('rejects a discount larger than the subtotal', () => {
-    const result = priceOrder(
-      [{ itemId: 'a', quantity: 1, unitPrice: 1000, openPrice: false }],
-      1001,
-      menuOf(item()),
-    );
-    expect(result).toEqual({ ok: false, reason: 'discount_too_large', subtotal: 1000 });
-  });
-
   it('requires a positive price for open-price items', () => {
     const result = priceOrder(
       [{ itemId: 'a', quantity: 1, unitPrice: 0, openPrice: true }],
-      0,
       menuOf(item({ openPrice: true, price: null })),
     );
     expect(result).toEqual({ ok: false, reason: 'invalid_open_price', itemId: 'a' });

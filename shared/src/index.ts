@@ -18,11 +18,16 @@ import type {
   OrderSchema,
   OrdersPageSchema,
   OrdersQuerySchema,
+  PromoCodeInputSchema,
+  PromoCodeSchema,
+  PromoQuoteSchema,
+  PromoRuleSchema,
   RegisterRequestSchema,
   SessionResponseSchema,
   UserSchema,
+  ValidatePromoRequestSchema,
 } from './schemas.js';
-import { MENU_CHANGE_KINDS, ORDER_STATUSES, ROLES } from './constants.js';
+import { MENU_CHANGE_KINDS, ORDER_STATUSES, PROMO_KINDS, ROLES } from './constants.js';
 
 export * from './constants.js';
 
@@ -47,9 +52,31 @@ export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
 export type SessionResponse = z.infer<typeof SessionResponseSchema>;
 export type CurrentSessionResponse = z.infer<typeof CurrentSessionResponseSchema>;
+export type PromoKind = (typeof PROMO_KINDS)[number];
+export type PromoRule = z.infer<typeof PromoRuleSchema>;
+export type PromoCode = z.infer<typeof PromoCodeSchema>;
+export type PromoCodeInput = z.infer<typeof PromoCodeInputSchema>;
+export type ValidatePromoRequest = z.infer<typeof ValidatePromoRequestSchema>;
+export type PromoQuote = z.infer<typeof PromoQuoteSchema>;
 export type MenuEvent = z.infer<typeof MenuEventSchema>;
 export type OrderEvent = z.infer<typeof OrderEventSchema>;
 
 export function nextStatus(status: OrderStatus): OrderStatus | null {
   return ORDER_STATUSES[ORDER_STATUSES.indexOf(status) + 1] ?? null;
+}
+
+/**
+ * The discount a promo rule gives for a subtotal (cents). Shared so the cart shows
+ * exactly what the server will charge; returns 0 below the minimum order amount.
+ */
+export function computeDiscount(rule: PromoRule, subtotal: Cents): Cents {
+  if (subtotal < rule.minOrderAmount) return 0;
+  const raw = rule.kind === 'FIXED' ? rule.value : Math.floor((subtotal * rule.value) / 100);
+  const capped = rule.maxDiscount === null ? raw : Math.min(raw, rule.maxDiscount);
+  return Math.max(0, Math.min(capped, subtotal));
+}
+
+/** Promo codes are case-insensitive: they are stored and compared upper-cased. */
+export function normalizePromoCode(code: string): string {
+  return code.trim().toUpperCase();
 }

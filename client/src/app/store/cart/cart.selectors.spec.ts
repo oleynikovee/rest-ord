@@ -3,7 +3,8 @@ import type { CartLine } from './cart.models';
 import {
   selectCanCheckout,
   selectCartLines,
-  selectDiscountTooLarge,
+  selectDiscount,
+  selectPromoShortfall,
   selectSubtotal,
   selectTotal,
 } from './cart.selectors';
@@ -21,12 +22,23 @@ const line = (patch: Partial<CartLine> = {}): CartLine => ({
 describe('cart selectors', () => {
   const entities = { pizza: menuItem() };
 
-  it('computes totals with a fixed discount', () => {
+  it('computes the promo discount live from the subtotal', () => {
     const lines = selectCartLines.projector([line()], entities, true);
     const subtotal = selectSubtotal.projector(lines);
     expect(subtotal).toBe(2000);
-    expect(selectTotal.projector(subtotal, 500)).toBe(1500);
-    expect(selectDiscountTooLarge.projector(subtotal, 2001)).toBe(true);
+
+    const percent = {
+      rule: { code: 'TEN', kind: 'PERCENT' as const, value: 10, minOrderAmount: 0, maxDiscount: 150 },
+      description: '',
+      discount: 0,
+    };
+    expect(selectDiscount.projector(subtotal, percent)).toBe(150); // 10% = 200, capped at 150
+    expect(selectTotal.projector(subtotal, 150)).toBe(1850);
+
+    const minimum = { ...percent, rule: { ...percent.rule, minOrderAmount: 3000 } };
+    expect(selectDiscount.projector(subtotal, minimum)).toBe(0);
+    expect(selectPromoShortfall.projector(subtotal, minimum)).toBe(1000);
+    expect(selectDiscount.projector(subtotal, null)).toBe(0);
   });
 
   it('flags lines whose item changed in the menu', () => {

@@ -1,4 +1,5 @@
 import { createSelector } from '@ngrx/store';
+import { computeDiscount } from '../../core/models';
 import { menuFeature } from '../menu/menu.reducer';
 import { selectItemEntities } from '../menu/menu.selectors';
 import { type CartLineView, lineProblem } from './cart.models';
@@ -38,32 +39,35 @@ export const selectSubtotal = createSelector(selectCartLines, (lines) =>
   lines.reduce((sum, line) => sum + line.lineTotal, 0),
 );
 
-export const selectDiscountTooLarge = createSelector(
-  selectSubtotal,
-  cartFeature.selectDiscount,
-  (subtotal, discount) => discount > subtotal,
+/** Same function as on the server, so the cart shows exactly what will be charged. */
+export const selectDiscount = createSelector(selectSubtotal, cartFeature.selectPromo, (subtotal, promo) =>
+  promo ? computeDiscount(promo.rule, subtotal) : 0,
+);
+
+/** How much more to add before the applied code gives a discount (0 when it already does). */
+export const selectPromoShortfall = createSelector(selectSubtotal, cartFeature.selectPromo, (subtotal, promo) =>
+  promo ? Math.max(0, promo.rule.minOrderAmount - subtotal) : 0,
 );
 
 export const selectTotal = createSelector(
   selectSubtotal,
-  cartFeature.selectDiscount,
-  (subtotal, discount) => Math.max(0, subtotal - discount),
+  selectDiscount,
+  (subtotal, discount) => subtotal - discount,
 );
 
 export const selectCanCheckout = createSelector(
   selectCartLines,
   selectCartProblems,
-  selectDiscountTooLarge,
   cartFeature.selectSubmitting,
+  cartFeature.selectPromoPending,
   menuFeature.selectLoaded,
   (
     lines,
     problems,
-    discountTooLarge,
     submitting,
+    promoPending,
     menuLoaded,
-  ) =>
-    menuLoaded && lines.length > 0 && problems.length === 0 && !discountTooLarge && !submitting,
+  ) => menuLoaded && lines.length > 0 && problems.length === 0 && !submitting && !promoPending,
 );
 
 /** Quantity of each menu item in the cart, for the steppers in the menu list. */

@@ -16,16 +16,19 @@ import {
   IdempotencyStore,
   MenuRepository,
   OrdersRepository,
+  PromoRepository,
   UsersRepository,
 } from '../domain/ports.js';
 import { MemoryEventBus } from './memory/memory-event-bus.js';
 import { MemoryIdempotencyStore } from './memory/memory-idempotency.store.js';
 import { MemoryMenuRepository } from './memory/memory-menu.repository.js';
 import { MemoryOrdersRepository } from './memory/memory-orders.repository.js';
+import { MemoryPromoRepository } from './memory/memory-promo.repository.js';
 import { MemoryUsersRepository } from './memory/memory-users.repository.js';
 import { PgDatabase } from './postgres/pg-database.js';
 import { PgMenuRepository } from './postgres/pg-menu.repository.js';
 import { PgOrdersRepository } from './postgres/pg-orders.repository.js';
+import { PgPromoRepository } from './postgres/pg-promo.repository.js';
 import { PgUsersRepository } from './postgres/pg-users.repository.js';
 import { createRedis } from './redis/redis-connection.js';
 import { RedisEventBus } from './redis/redis-event-bus.js';
@@ -97,10 +100,17 @@ export class InfrastructureModule {
           pg ? new PgMenuRepository(pg) : new MemoryMenuRepository(),
       },
       {
-        provide: OrdersRepository,
+        provide: PromoRepository,
         inject: [PG],
         useFactory: (pg: PgDatabase | null) =>
-          pg ? new PgOrdersRepository(pg) : new MemoryOrdersRepository(),
+          pg ? new PgPromoRepository(pg) : new MemoryPromoRepository(),
+      },
+      {
+        provide: OrdersRepository,
+        inject: [PG, PromoRepository],
+        // In memory, redemption shares the promo store; in Postgres it is a transaction.
+        useFactory: (pg: PgDatabase | null, promos: PromoRepository) =>
+          pg ? new PgOrdersRepository(pg) : new MemoryOrdersRepository(promos as MemoryPromoRepository),
       },
       {
         provide: UsersRepository,
@@ -132,6 +142,7 @@ export class InfrastructureModule {
         APP_CONFIG,
         MenuRepository,
         OrdersRepository,
+        PromoRepository,
         UsersRepository,
         IdempotencyStore,
         EventBus,

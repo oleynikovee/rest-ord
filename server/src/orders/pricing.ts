@@ -16,25 +16,18 @@ export interface RequestedLine {
 export interface PricedOrder {
   lines: OrderLine[];
   subtotal: number;
-  discount: number;
-  total: number;
 }
 
 export type PricingResult =
   | { ok: true; order: PricedOrder }
   | { ok: false; reason: 'menu_changed'; issues: MenuChangeIssue[] }
-  | { ok: false; reason: 'discount_too_large'; subtotal: number }
   | { ok: false; reason: 'invalid_open_price'; itemId: string };
 
 /**
  * Prices an order against the current menu. Every difference between what the
  * user saw and the current menu is reported, so nothing changes behind their back.
  */
-export function priceOrder(
-  lines: RequestedLine[],
-  discount: number,
-  menu: Map<string, MenuItem>,
-): PricingResult {
+export function priceOrder(lines: RequestedLine[], menu: Map<string, MenuItem>): PricingResult {
   const issues: MenuChangeIssue[] = [];
   const orderLines: OrderLine[] = [];
 
@@ -73,12 +66,5 @@ export function priceOrder(
   if (issues.length > 0) return { ok: false, reason: 'menu_changed', issues };
 
   const subtotal = orderLines.reduce((sum, l) => sum + l.lineTotal, 0);
-  if (discount > subtotal) {
-    return { ok: false, reason: 'discount_too_large', subtotal };
-  }
-
-  return {
-    ok: true,
-    order: { lines: orderLines, subtotal, discount, total: subtotal - discount },
-  };
+  return { ok: true, order: { lines: orderLines, subtotal } };
 }

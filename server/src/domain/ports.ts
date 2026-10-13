@@ -3,7 +3,11 @@ import type {
   MenuItem,
   MenuSnapshot,
   NewOrder,
+  CreateOrderResult,
   Order,
+  PromoCode,
+  PromoCodeInput,
+  PromoRedemption,
   UserRecord,
 } from './models.js';
 
@@ -70,8 +74,16 @@ export abstract class OrdersRepository {
   abstract list(query: OrdersListQuery): Promise<Order[]>;
   abstract findById(id: string): Promise<Order | null>;
   abstract findByIdempotencyKey(key: string): Promise<Order | null>;
-  /** Must be atomic per idempotency key: a duplicate key returns the existing order. */
-  abstract create(order: NewOrder, idempotencyKey: string): Promise<Order>;
+  /**
+   * Atomic: stores the order and, when given, redeems the promo code (checking its
+   * total and per-customer limits under a lock) in one transaction. A reused
+   * idempotency key returns the existing order.
+   */
+  abstract create(
+    order: NewOrder,
+    idempotencyKey: string,
+    redemption?: PromoRedemption,
+  ): Promise<CreateOrderResult>;
   /** Moves every unfinished order not touched for `olderThanMs` one status forward. */
   abstract advanceStale(olderThanMs: number): Promise<Order[]>;
 }
@@ -92,3 +104,18 @@ export abstract class EventBus {
   /** Returns an unsubscribe function. */
   abstract subscribe<T>(topic: string, handler: (payload: T) => void): () => void;
 }
+
+export abstract class PromoRepository {
+  abstract list(): Promise<PromoCode[]>;
+  /** `code` must already be normalized (upper-case). */
+  abstract findByCode(code: string): Promise<PromoCode | null>;
+  abstract countRedemptions(promoId: string, userId: string): Promise<number>;
+  /** Returns `null` when the code is already taken. */
+  abstract create(input: PromoCodeInput): Promise<PromoCode | null>;
+  abstract update(
+    id: string,
+    input: PromoCodeInput,
+    expectedVersion: number,
+  ): Promise<VersionedWrite<PromoCode>>;
+}
+

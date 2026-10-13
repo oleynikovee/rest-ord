@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { type Action, Store } from '@ngrx/store';
-import { type Observable, catchError, concatMap, filter, groupBy, map, mergeMap, of, switchMap, take, tap } from 'rxjs';
+import { type Observable, catchError, concatMap, groupBy, map, mergeMap, of, switchMap, take, tap } from 'rxjs';
 import { toApiError } from '../../core/api-error';
 import { ApiService } from '../../core/api.service';
 import { NotifyService } from '../../core/notify.service';
@@ -106,13 +106,12 @@ export const applyConflictState = createEffect(
   (actions$ = inject(Actions)) =>
     actions$.pipe(
       ofType(SetupActions.requestFailure),
-      map(({ error }) => error.current),
-      filter((current) => current !== undefined),
-      map((current) =>
-        'categoryId' in current
-          ? MenuLiveActions.itemUpserted({ item: current })
-          : MenuLiveActions.categoryUpserted({ category: current }),
-      ),
+      mergeMap(({ error }) => {
+        const current = error.current;
+        if (current && 'categoryId' in current) return [MenuLiveActions.itemUpserted({ item: current })];
+        if (current && 'sortOrder' in current) return [MenuLiveActions.categoryUpserted({ category: current })];
+        return [];
+      }),
     ),
   { functional: true },
 );

@@ -47,6 +47,9 @@ import { connectionFeature } from './store/connection/connection.reducer';
           <a mat-button
               routerLink="/setup"
               routerLinkActive="active">Setup</a>
+          <a mat-button
+              routerLink="/promos"
+              routerLinkActive="active">Promos</a>
         }
       </nav>
       <span class="status"

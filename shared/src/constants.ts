@@ -23,6 +23,22 @@ export const ORDERS_PAGE_SIZE = {
   max: 100,
 } as const;
 
+export const PROMO_KINDS = [
+  'FIXED',
+  'PERCENT',
+] as const;
+
+/** Why a promo code cannot be applied (HTTP 422 `code`). */
+export const PROMO_ERRORS = {
+  notFound: 'PROMO_NOT_FOUND',
+  inactive: 'PROMO_INACTIVE',
+  notStarted: 'PROMO_NOT_STARTED',
+  expired: 'PROMO_EXPIRED',
+  minOrder: 'PROMO_MIN_ORDER',
+  exhausted: 'PROMO_EXHAUSTED',
+  alreadyUsed: 'PROMO_ALREADY_USED',
+} as const;
+
 /** Header used to make order creation idempotent. */
 export const IDEMPOTENCY_HEADER = 'Idempotency-Key';
 export const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9_-]{8,128}$/;

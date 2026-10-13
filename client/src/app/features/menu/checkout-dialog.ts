@@ -11,6 +11,7 @@ import { CartActions } from '../../store/cart/cart.actions';
 import { cartFeature } from '../../store/cart/cart.reducer';
 import {
   selectCanCheckout,
+  selectDiscount,
   selectCartLines,
   selectCartProblems,
   selectSubtotal,
@@ -148,7 +149,7 @@ export class CheckoutDialog {
   protected readonly problems = this.store.selectSignal(selectCartProblems);
   protected readonly subtotal = this.store.selectSignal(selectSubtotal);
   protected readonly total = this.store.selectSignal(selectTotal);
-  protected readonly discount = this.store.selectSignal(cartFeature.selectDiscount);
+  protected readonly discount = this.store.selectSignal(selectDiscount);
   protected readonly canCheckout = this.store.selectSignal(selectCanCheckout);
   protected readonly submitting = this.store.selectSignal(cartFeature.selectSubmitting);
   protected readonly error = this.store.selectSignal(cartFeature.selectError);

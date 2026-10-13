@@ -49,6 +49,35 @@ CREATE TABLE IF NOT EXISTS users (
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES users(id);
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name text;
 CREATE INDEX IF NOT EXISTS orders_user_idx ON orders (user_id, number DESC);
+
+CREATE TABLE IF NOT EXISTS promo_codes (
+  id uuid PRIMARY KEY,
+  code text NOT NULL UNIQUE,
+  description text NOT NULL DEFAULT '',
+  kind text NOT NULL CHECK (kind IN ('FIXED', 'PERCENT')),
+  value integer NOT NULL CHECK (value > 0),
+  min_order_amount integer NOT NULL DEFAULT 0 CHECK (min_order_amount >= 0),
+  max_discount integer CHECK (max_discount >= 0),
+  usage_limit integer CHECK (usage_limit > 0),
+  per_user_limit integer CHECK (per_user_limit > 0),
+  used_count integer NOT NULL DEFAULT 0,
+  starts_at timestamptz,
+  expires_at timestamptz,
+  active boolean NOT NULL DEFAULT true,
+  version integer NOT NULL DEFAULT 1,
+  CHECK (kind <> 'PERCENT' OR value <= 100),
+  CHECK (usage_limit IS NULL OR used_count <= usage_limit)
+);
+
+CREATE TABLE IF NOT EXISTS promo_redemptions (
+  promo_id uuid NOT NULL REFERENCES promo_codes(id),
+  user_id uuid NOT NULL REFERENCES users(id),
+  order_id uuid NOT NULL UNIQUE REFERENCES orders(id),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS promo_redemptions_user_idx ON promo_redemptions (promo_id, user_id);
+
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS promo_code text;
 `;
 
 /** Arbitrary constant for pg_advisory_lock so concurrent instances migrate one at a time. */

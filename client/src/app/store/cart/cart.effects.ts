@@ -23,6 +23,7 @@ import { NotifyService } from '../../core/notify.service';
 import { MenuLiveActions } from '../menu/menu.actions';
 import { CartActions } from './cart.actions';
 import { CART_STORAGE_KEY, cartFeature } from './cart.reducer';
+import { selectSubtotal } from './cart.selectors';
 
 /**
  * `exhaustMap` ignores repeated clicks while a request is in flight, and the
@@ -45,7 +46,7 @@ export const checkout = createEffect(
             unitPrice,
             openPrice,
           })),
-          discount: cart.discount,
+          promoCode: cart.promo?.rule.code,
         };
         return api.placeOrder(request, cart.checkoutKey!).pipe(
           retry({
@@ -120,11 +121,26 @@ export const notifyCheckoutFailure = createEffect(
   { functional: true, dispatch: false },
 );
 
+export const applyPromo = createEffect(
+  (actions$ = inject(Actions), store = inject(Store), api = inject(ApiService)) =>
+    actions$.pipe(
+      ofType(CartActions.applyPromo),
+      concatLatestFrom(() => store.select(selectSubtotal)),
+      switchMap(([{ code }, subtotal]) =>
+        api.validatePromo({ code, subtotal }).pipe(
+          map((quote) => CartActions.applyPromoSuccess({ quote })),
+          catchError((error: unknown) => of(CartActions.applyPromoFailure({ error: toApiError(error) }))),
+        ),
+      ),
+    ),
+  { functional: true },
+);
+
 export const persistCart = createEffect(
   (store = inject(Store)) =>
     store.select(cartFeature.selectCartState).pipe(
       // Written synchronously: a reload right after an edit must not lose it.
-      map(({ lines, discount, checkoutKey }) => JSON.stringify({ lines, discount, checkoutKey })),
+      map(({ lines, promo, checkoutKey }) => JSON.stringify({ lines, promo, checkoutKey })),
       distinctUntilChanged(),
       tap((json) => {
         try {

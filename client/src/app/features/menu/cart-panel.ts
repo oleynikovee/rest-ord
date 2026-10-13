@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -7,7 +6,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { MoneyPipe, toCents } from '../../shared/money.pipe';
+import { MoneyPipe } from '../../shared/money.pipe';
 import { QuantityStepper } from '../../shared/quantity-stepper';
 import { authFeature } from '../../store/auth/auth.reducer';
 import { CartActions } from '../../store/cart/cart.actions';
@@ -16,7 +15,8 @@ import {
   selectCanCheckout,
   selectCartLines,
   selectCartProblems,
-  selectDiscountTooLarge,
+  selectDiscount,
+  selectPromoShortfall,
   selectSubtotal,
   selectTotal,
 } from '../../store/cart/cart.selectors';
@@ -30,8 +30,10 @@ import { CheckoutDialog } from './checkout-dialog';
     @let _closable = closable();
     @let _lines = lines();
     @let _problems = problems();
-    @let _discountInput = discountInput();
-    @let _discountTooLarge = discountTooLarge();
+    @let _promo = promo();
+    @let _promoPending = promoPending();
+    @let _promoError = promoError();
+    @let _promoShortfall = promoShortfall();
     @let _subtotal = subtotal();
     @let _discount = discount();
     @let _total = total();
@@ -92,22 +94,45 @@ import { CheckoutDialog } from './checkout-dialog';
         }
       </ul>
 
-      <mat-form-field class="discount"
-          appearance="outline"
-          subscriptSizing="dynamic">
-        <mat-label>Discount</mat-label>
-        <span matTextPrefix>$&nbsp;</span>
-        <input type="number"
-            inputmode="decimal"
-            min="0"
-            step="0.01"
-            matInput
-            [ngModel]="_discountInput"
-            (ngModelChange)="setDiscount($event)" />
-        @if (_discountTooLarge) {
-          <mat-hint class="error">The discount cannot exceed the subtotal</mat-hint>
-        }
-      </mat-form-field>
+      @if (_promo) {
+        <div class="promo-applied">
+          <div>
+            <div class="promo-code">{{ _promo.rule.code }}</div>
+            <div class="promo-description">{{ _promo.description }}</div>
+            @if (_promoShortfall > 0) {
+              <div class="promo-hint">Add {{ _promoShortfall | money }} more to get this discount</div>
+            }
+          </div>
+          <button type="button"
+              [attr.aria-label]="'Remove promo code ' + _promo.rule.code"
+              (click)="removePromo()"
+              mat-icon-button>
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      } @else if (_signedIn) {
+        <form class="promo-form"
+            (submit)="applyPromo(promoInput.value); $event.preventDefault()">
+          <mat-form-field class="promo-field"
+              appearance="outline"
+              subscriptSizing="dynamic">
+            <mat-label>Promo code</mat-label>
+            <input #promoInput
+                autocapitalize="characters"
+                autocomplete="off"
+                maxlength="40"
+                matInput />
+            @if (_promoError) {
+              <mat-hint class="error">{{ _promoError.message }}</mat-hint>
+            }
+          </mat-form-field>
+          <button type="submit"
+              [disabled]="_promoPending"
+              mat-stroked-button>Apply</button>
+        </form>
+      } @else {
+        <p class="promo-note">Sign in to use a promo code.</p>
+      }
 
       <dl class="totals">
         <dt>Subtotal</dt>
@@ -143,7 +168,6 @@ import { CheckoutDialog } from './checkout-dialog';
   styleUrl: './cart-panel.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FormsModule,
     MatButtonModule,
     MatFormFieldModule,
     MatIconModule,
@@ -164,29 +188,28 @@ export class CartPanel {
   protected readonly problems = this.store.selectSignal(selectCartProblems);
   protected readonly subtotal = this.store.selectSignal(selectSubtotal);
   protected readonly total = this.store.selectSignal(selectTotal);
-  protected readonly discount = this.store.selectSignal(cartFeature.selectDiscount);
-  protected readonly discountTooLarge = this.store.selectSignal(selectDiscountTooLarge);
+  protected readonly discount = this.store.selectSignal(selectDiscount);
+  protected readonly promo = this.store.selectSignal(cartFeature.selectPromo);
+  protected readonly promoPending = this.store.selectSignal(cartFeature.selectPromoPending);
+  protected readonly promoError = this.store.selectSignal(cartFeature.selectPromoError);
+  protected readonly promoShortfall = this.store.selectSignal(selectPromoShortfall);
   protected readonly canCheckout = this.store.selectSignal(selectCanCheckout);
   private readonly authStatus = this.store.selectSignal(authFeature.selectStatus);
   protected readonly signedIn = computed(() => this.authStatus() === 'authenticated');
   private readonly items = this.store.selectSignal(selectItemEntities);
 
-  protected readonly discountInput = computed(() =>
-    this.discount() ? this.discount() / 100 : null,
-  );
   protected readonly describe = describeProblem;
 
   protected setQuantity(lineId: string, quantity: number): void {
     this.store.dispatch(CartActions.setQuantity({ lineId, quantity }));
   }
 
-  protected setDiscount(value: number | string | null): void {
-    const amount = Number(value);
-    this.store.dispatch(
-      CartActions.setDiscount({
-        discount: Number.isFinite(amount) && amount > 0 ? toCents(amount) : 0,
-      }),
-    );
+  protected applyPromo(code: string): void {
+    if (code.trim()) this.store.dispatch(CartActions.applyPromo({ code: code.trim() }));
+  }
+
+  protected removePromo(): void {
+    this.store.dispatch(CartActions.removePromo());
   }
 
   protected applyChanges(): void {

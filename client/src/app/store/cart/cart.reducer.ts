@@ -1,12 +1,15 @@
 import { type ActionReducer, createFeature, createReducer, on } from '@ngrx/store';
 import type { ApiError } from '../../core/api-error';
-import type { Cents } from '../../core/models';
+import type { PromoQuote } from '../../core/models';
 import { CartActions } from './cart.actions';
 import { type CartLine, MAX_QUANTITY, lineIdFor, lineProblem } from './cart.models';
 
 export interface CartState {
   lines: CartLine[];
-  discount: Cents;
+  /** Applied promo code; the discount is recomputed from its rule as the cart changes. */
+  promo: PromoQuote | null;
+  promoPending: boolean;
+  promoError: ApiError | null;
   /**
    * Idempotency key of the current checkout attempt. It survives retries and page
    * reloads, and is reset whenever the cart content changes.
@@ -20,7 +23,9 @@ export const CART_STORAGE_KEY = 'restaurant.cart.v1';
 
 export const emptyCart: CartState = {
   lines: [],
-  discount: 0,
+  promo: null,
+  promoPending: false,
+  promoError: null,
   checkoutKey: null,
   submitting: false,
   error: null,
@@ -34,7 +39,7 @@ export function loadPersistedCart(): CartState {
     return {
       ...emptyCart,
       lines: Array.isArray(saved.lines) ? saved.lines : [],
-      discount: typeof saved.discount === 'number' ? saved.discount : 0,
+      promo: saved.promo && typeof saved.promo === 'object' ? saved.promo : null,
       checkoutKey: typeof saved.checkoutKey === 'string' ? saved.checkoutKey : null,
     };
   } catch {
@@ -45,14 +50,9 @@ export function loadPersistedCart(): CartState {
 const clamp = (quantity: number): number => Math.max(0, Math.min(MAX_QUANTITY, Math.floor(quantity)));
 
 /** Any edit invalidates the pending checkout key: a different cart is a different order. */
-const edited = (
-  state: CartState,
-  lines: CartLine[],
-  discount = state.discount,
-): CartState => ({
+const edited = (state: CartState, lines: CartLine[]): CartState => ({
   ...state,
   lines,
-  discount,
   checkoutKey: null,
   error: null,
 });
@@ -95,9 +95,18 @@ export const createCartReducer = (initialState: CartState): ActionReducer<CartSt
         state.lines.filter((line) => line.lineId !== lineId),
       ),
     ),
-    on(CartActions.setDiscount, (state, { discount }) =>
-      edited(state, state.lines, Math.max(0, Math.round(discount))),
-    ),
+    on(CartActions.applyPromo, (state): CartState => ({ ...state, promoPending: true, promoError: null })),
+    on(CartActions.applyPromoSuccess, (state, { quote }): CartState => ({
+      ...edited(state, state.lines),
+      promo: quote,
+      promoPending: false,
+    })),
+    on(CartActions.applyPromoFailure, (state, { error }): CartState => ({
+      ...state,
+      promoPending: false,
+      promoError: error,
+    })),
+    on(CartActions.removePromo, (state): CartState => ({ ...edited(state, state.lines), promo: null, promoError: null })),
     on(CartActions.applyMenuChanges, (state, { items }) =>
       edited(
         state,
@@ -131,6 +140,8 @@ export const createCartReducer = (initialState: CartState): ActionReducer<CartSt
       ...state,
       submitting: false,
       error,
+      // The code can no longer be used (expired, used up...): drop it and say why.
+      ...(error.code.startsWith('PROMO_') ? { promo: null, promoError: error } : {}),
     })),
   );
 

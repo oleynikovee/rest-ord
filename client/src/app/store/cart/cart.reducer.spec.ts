@@ -54,7 +54,7 @@ describe('cart reducer', () => {
     state = reducer(state, CartActions.checkout({ key: 'second-key' }));
     expect(state.checkoutKey).toBe('first-key');
 
-    state = reducer(state, CartActions.setDiscount({ discount: 100 }));
+    state = reducer(state, CartActions.setQuantity({ lineId: 'pizza', quantity: 2 }));
     expect(state.checkoutKey).toBeNull();
   });
 
@@ -82,5 +82,23 @@ describe('cart reducer', () => {
       }),
     );
     expect(state.lines).toEqual([expect.objectContaining({ itemId: 'pizza', unitPrice: 1200 })]);
+  });
+
+  it('applies a promo code and drops it when the server refuses it at checkout', () => {
+    const quote = {
+      rule: { code: 'SAVE5', kind: 'FIXED' as const, value: 500, minOrderAmount: 3000, maxDiscount: null },
+      description: '$5 off',
+      discount: 500,
+    };
+    let state = reduce(CartActions.addItem({ item: pizza, quantity: 1 }), CartActions.applyPromo({ code: 'save5' }));
+    expect(state.promoPending).toBe(true);
+    state = reducer(state, CartActions.applyPromoSuccess({ quote }));
+    expect(state).toMatchObject({ promo: quote, promoPending: false });
+
+    state = reducer(
+      state,
+      CartActions.checkoutFailure({ error: { status: 422, code: 'PROMO_EXHAUSTED', message: 'Used up' } }),
+    );
+    expect(state).toMatchObject({ promo: null, promoError: { code: 'PROMO_EXHAUSTED' } });
   });
 });

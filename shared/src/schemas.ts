@@ -4,7 +4,7 @@
  * All money values are integer minor units (cents).
  */
 import { z } from 'zod';
-import { MENU_CHANGE_KINDS, ORDER_STATUSES, ORDERS_PAGE_SIZE, ROLES } from './constants.js';
+import { MENU_CHANGE_KINDS, ORDER_STATUSES, ORDERS_PAGE_SIZE, PROMO_KINDS, ROLES } from './constants.js';
 
 const id = z.uuid();
 const cents = z.int().min(0);
@@ -65,6 +65,8 @@ export const OrderSchema = z
     subtotal: cents,
     discount: cents,
     total: cents,
+    /** Promo code that produced the discount, if any. */
+    promoCode: z.string().nullable(),
     status: OrderStatusSchema,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -101,9 +103,65 @@ export const CreateOrderRequestSchema = z
       )
       .min(1)
       .max(100),
-    discount: cents,
+    /** Optional promo code; the server computes the discount itself. */
+    promoCode: z.string().min(1).max(40).optional(),
   })
   .meta({ id: 'CreateOrderRequest' });
+
+const promoCode = z
+  .string()
+  .regex(/^[A-Z0-9_-]{3,40}$/, 'Use 3-40 letters, digits, "-" or "_"');
+
+/** The part of a promo code the client needs to compute the discount live. */
+export const PromoRuleSchema = z
+  .object({
+    code: promoCode,
+    kind: z.enum(PROMO_KINDS),
+    /** FIXED: cents. PERCENT: whole percent, 1-100. */
+    value: z.int().min(1),
+    /** Minimum subtotal in cents. */
+    minOrderAmount: cents,
+    /** Upper bound of the discount in cents (useful for PERCENT); `null` = no cap. */
+    maxDiscount: cents.nullable(),
+  })
+  .meta({ id: 'PromoRule' });
+
+export const PromoCodeSchema = PromoRuleSchema.extend({
+  id,
+  description: z.string().max(200),
+  /** Total redemptions allowed; `null` = unlimited. */
+  usageLimit: z.int().min(1).nullable(),
+  /** Redemptions allowed per customer; `null` = unlimited. */
+  perUserLimit: z.int().min(1).nullable(),
+  usedCount: z.int().min(0),
+  startsAt: timestamp.nullable(),
+  expiresAt: timestamp.nullable(),
+  active: z.boolean(),
+  version: z.int().min(1),
+}).meta({ id: 'PromoCode' });
+
+export const PromoCodeInputSchema = PromoCodeSchema.omit({
+  id: true,
+  usedCount: true,
+  version: true,
+}).meta({ id: 'PromoCodeInput' });
+
+export const ValidatePromoRequestSchema = z
+  .object({
+    code: z.string().min(1).max(40),
+    /** Current cart subtotal in cents, to check the minimum order amount. */
+    subtotal: cents,
+  })
+  .meta({ id: 'ValidatePromoRequest' });
+
+/** A promo code that can be applied, with the discount for the given subtotal. */
+export const PromoQuoteSchema = z
+  .object({
+    rule: PromoRuleSchema,
+    description: z.string(),
+    discount: cents,
+  })
+  .meta({ id: 'PromoQuote' });
 
 export const MenuChangeIssueSchema = z
   .object({
@@ -113,17 +171,6 @@ export const MenuChangeIssueSchema = z
     item: MenuItemSchema.optional(),
   })
   .meta({ id: 'MenuChangeIssue' });
-
-export const ApiErrorBodySchema = z
-  .object({
-    statusCode: z.int().optional(),
-    code: z.string().optional(),
-    message: z.union([z.string(), z.array(z.string())]),
-    issues: z.array(MenuChangeIssueSchema).optional(),
-    /** With 412 VERSION_CONFLICT: the current state of the entity that was edited. */
-    current: z.union([MenuItemSchema, CategorySchema]).optional(),
-  })
-  .meta({ id: 'ApiError' });
 
 export const RoleSchema = z.enum(ROLES);
 
@@ -178,3 +225,14 @@ export const OrderEventSchema = z
     order: OrderSchema,
   })
   .meta({ id: 'OrderEvent' });
+
+export const ApiErrorBodySchema = z
+  .object({
+    statusCode: z.int().optional(),
+    code: z.string().optional(),
+    message: z.union([z.string(), z.array(z.string())]),
+    issues: z.array(MenuChangeIssueSchema).optional(),
+    /** With 412 VERSION_CONFLICT: the current state of the entity that was edited. */
+    current: z.union([MenuItemSchema, CategorySchema, PromoCodeSchema]).optional(),
+  })
+  .meta({ id: 'ApiError' });
