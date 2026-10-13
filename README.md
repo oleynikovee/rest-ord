@@ -223,6 +223,10 @@ failed-login spikes.
         └── shared/                    pipes, dialogs, form helpers
 ```
 
+Every Angular component has its own folder with three files, e.g.
+`features/menu/cart-panel/cart-panel.{ts,html,scss}`; non-component code (pipes, helpers)
+sits next to the component folders.
+
 | Orders (admin) | Promo codes | Mobile |
 |---|---|---|
 | ![Orders](docs/orders.png) | ![Promo codes](docs/promos.png) | ![Mobile](docs/mobile.png) |

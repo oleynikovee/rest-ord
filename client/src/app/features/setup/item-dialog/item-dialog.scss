@@ -1,0 +1,9 @@
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: min(420px, 80vw);
+}
+mat-checkbox {
+  margin-bottom: 8px;
+}

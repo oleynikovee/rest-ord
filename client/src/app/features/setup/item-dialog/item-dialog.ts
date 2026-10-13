@@ -7,9 +7,9 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import type { Category, MenuItem, MenuItemInput } from '../../core/models';
-import { invalidSignal } from '../../shared/form-signals';
-import { toCents } from '../../shared/money.pipe';
+import type { Category, MenuItem, MenuItemInput } from '../../../core/models';
+import { invalidSignal } from '../../../shared/form-signals';
+import { toCents } from '../../../shared/money.pipe';
 
 export interface ItemDialogData {
   categories: Category[];
@@ -21,74 +21,8 @@ export interface ItemDialogData {
 
 @Component({
   selector: 'app-item-dialog',
-  template: `
-    @let _openPrice = openPrice();
-    @let _invalid = invalid();
-
-    <h2 mat-dialog-title>{{ data.item ? 'Edit item' : 'New item' }}</h2>
-    <form [formGroup]="form"
-        (ngSubmit)="submit()">
-      <mat-dialog-content class="fields">
-        <mat-form-field appearance="outline">
-          <mat-label>Name</mat-label>
-          <input maxlength="100"
-              matInput
-              formControlName="name"
-              cdkFocusInitial />
-          <mat-error>Required</mat-error>
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Description</mat-label>
-          <textarea maxlength="300"
-              rows="2"
-              matInput
-              formControlName="description"></textarea>
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Category</mat-label>
-          <mat-select formControlName="categoryId">
-            @for (category of data.categories; track category.id) {
-              <mat-option [value]="category.id">{{ category.name }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-        <mat-checkbox formControlName="openPrice">Open price (entered when ordering)</mat-checkbox>
-        @if (!_openPrice) {
-          <mat-form-field appearance="outline">
-            <mat-label>Price</mat-label>
-            <span matTextPrefix>$&nbsp;</span>
-            <input type="number"
-                inputmode="decimal"
-                min="0"
-                step="0.01"
-                matInput
-                formControlName="price" />
-            <mat-error>Enter a price from 0 to 10 000</mat-error>
-          </mat-form-field>
-        }
-        <mat-checkbox formControlName="available">Available</mat-checkbox>
-      </mat-dialog-content>
-      <mat-dialog-actions align="end">
-        <button type="button"
-            mat-button
-            mat-dialog-close>Cancel</button>
-        <button type="submit"
-            [disabled]="_invalid"
-            mat-flat-button>Save</button>
-      </mat-dialog-actions>
-    </form>
-  `,
-  styles: `
-    .fields {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      min-width: min(420px, 80vw);
-    }
-    mat-checkbox {
-      margin-bottom: 8px;
-    }
-  `,
+  templateUrl: './item-dialog.html',
+  styleUrl: './item-dialog.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ReactiveFormsModule,

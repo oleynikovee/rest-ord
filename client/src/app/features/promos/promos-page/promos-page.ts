@@ -7,12 +7,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import type { Observable } from 'rxjs';
-import { type ApiError, toApiError } from '../../core/api-error';
-import { ApiService } from '../../core/api.service';
-import type { PromoCode, PromoCodeInput } from '../../core/models';
-import { NotifyService } from '../../core/notify.service';
-import { formatMoney } from '../../shared/money.pipe';
-import { PromoDialog } from './promo-dialog';
+import { type ApiError, toApiError } from '../../../core/api-error';
+import { ApiService } from '../../../core/api.service';
+import type { PromoCode, PromoCodeInput } from '../../../core/models';
+import { NotifyService } from '../../../core/notify.service';
+import { formatMoney } from '../../../shared/money.pipe';
+import { PromoDialog } from '../promo-dialog/promo-dialog';
 
 function toInput(promo: PromoCode): PromoCodeInput {
   return {
@@ -33,122 +33,8 @@ function toInput(promo: PromoCode): PromoCodeInput {
 /** Admin-only page; promo codes are not shared state of the ordering flow, so a signal store is enough here. */
 @Component({
   selector: 'app-promos-page',
-  template: `
-    @let _promos = promos();
-    @let _loaded = loaded();
-    @let _error = error();
-
-    <div class="page">
-      <header class="page-header">
-        <h1>Promo codes</h1>
-        <button type="button"
-            (click)="create()"
-            mat-flat-button>
-          <mat-icon>add</mat-icon> Promo code
-        </button>
-      </header>
-
-      @if (_loaded) {
-        <ul class="list">
-          @for (promo of _promos; track promo.id) {
-            <li class="promo"
-                [class.inactive]="!promo.active">
-              <div class="info">
-                <div class="code">{{ promo.code }}</div>
-                <div class="rule">{{ describe(promo) }}</div>
-                <div class="meta">
-                  Used {{ promo.usedCount }}{{ promo.usageLimit === null ? '' : ' / ' + promo.usageLimit }}
-                  @if (promo.perUserLimit !== null) {
-                    · {{ promo.perUserLimit }} per customer
-                  }
-                  @if (promo.expiresAt) {
-                    · until {{ promo.expiresAt | date: 'medium' }}
-                  }
-                </div>
-              </div>
-              <mat-slide-toggle [checked]="promo.active"
-                  [attr.aria-label]="'Active: ' + promo.code"
-                  (change)="setActive(promo, $event.checked)">Active</mat-slide-toggle>
-              <button type="button"
-                  [attr.aria-label]="'Edit ' + promo.code"
-                  (click)="edit(promo)"
-                  mat-icon-button
-                  matTooltip="Edit">
-                <mat-icon>edit</mat-icon>
-              </button>
-            </li>
-          } @empty {
-            <li class="empty">No promo codes yet.</li>
-          }
-        </ul>
-      } @else if (_error) {
-        <div class="page-error"
-            role="alert">
-          <p>We couldn't load the promo codes. {{ _error.message }}</p>
-          <button type="button"
-              (click)="load()"
-              mat-flat-button>Try again</button>
-        </div>
-      } @else {
-        @for (i of [1, 2, 3]; track $index) {
-          <div class="skeleton"
-              style="height: 72px; margin-bottom: 8px"></div>
-        }
-      }
-    </div>
-  `,
-  styles: `
-    .page {
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 16px;
-    }
-    .page-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      h1 {
-        font: var(--mat-sys-headline-small);
-        margin: 8px 0;
-      }
-    }
-    .list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-    .promo {
-      display: grid;
-      grid-template-columns: 1fr auto auto;
-      align-items: center;
-      gap: 12px;
-      min-height: 72px;
-      padding: 8px 0;
-      border-bottom: 1px solid var(--mat-sys-outline-variant);
-    }
-    .promo.inactive .info {
-      opacity: 0.55;
-    }
-    .info {
-      min-width: 0;
-    }
-    .code {
-      font: var(--mat-sys-title-medium);
-      letter-spacing: 0.04em;
-    }
-    .rule {
-      font: var(--mat-sys-body-medium);
-    }
-    .meta {
-      font: var(--mat-sys-body-small);
-      color: var(--mat-sys-on-surface-variant);
-    }
-    .empty {
-      padding: 24px 0;
-      color: var(--mat-sys-on-surface-variant);
-    }
-  `,
+  templateUrl: './promos-page.html',
+  styleUrl: './promos-page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatButtonModule,

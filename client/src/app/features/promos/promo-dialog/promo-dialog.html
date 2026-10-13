@@ -1,0 +1,113 @@
+@let _kind = kind();
+@let _invalid = invalid();
+
+<h2 mat-dialog-title>{{ data ? 'Edit promo code' : 'New promo code' }}</h2>
+<form [formGroup]="form"
+    (ngSubmit)="submit()">
+  <mat-dialog-content class="fields">
+    <mat-form-field appearance="outline">
+      <mat-label>Code</mat-label>
+      <input autocapitalize="characters"
+          maxlength="40"
+          matInput
+          formControlName="code"
+          cdkFocusInitial />
+      <mat-hint>3–40 letters, digits, "-" or "_"; case-insensitive</mat-hint>
+      <mat-error>3–40 letters, digits, "-" or "_"</mat-error>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Description shown to customers</mat-label>
+      <input maxlength="200"
+          matInput
+          formControlName="description" />
+    </mat-form-field>
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Type</mat-label>
+        <mat-select formControlName="kind">
+          <mat-option value="PERCENT">Percent off</mat-option>
+          <mat-option value="FIXED">Fixed amount off</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>{{ _kind === 'PERCENT' ? 'Percent' : 'Amount' }}</mat-label>
+        @if (_kind === 'FIXED') {
+          <span matTextPrefix>$&nbsp;</span>
+        }
+        <input type="number"
+            inputmode="decimal"
+            min="0"
+            matInput
+            formControlName="value" />
+        @if (_kind === 'PERCENT') {
+          <span matTextSuffix>%</span>
+        }
+        <mat-error>{{ _kind === 'PERCENT' ? 'From 1 to 100' : 'More than 0' }}</mat-error>
+      </mat-form-field>
+    </div>
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Minimum order</mat-label>
+        <span matTextPrefix>$&nbsp;</span>
+        <input type="number"
+            inputmode="decimal"
+            min="0"
+            matInput
+            formControlName="minOrderAmount" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Maximum discount</mat-label>
+        <span matTextPrefix>$&nbsp;</span>
+        <input type="number"
+            inputmode="decimal"
+            min="0"
+            placeholder="No cap"
+            matInput
+            formControlName="maxDiscount" />
+      </mat-form-field>
+    </div>
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Total uses</mat-label>
+        <input type="number"
+            inputmode="numeric"
+            min="1"
+            placeholder="Unlimited"
+            matInput
+            formControlName="usageLimit" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Uses per customer</mat-label>
+        <input type="number"
+            inputmode="numeric"
+            min="1"
+            placeholder="Unlimited"
+            matInput
+            formControlName="perUserLimit" />
+      </mat-form-field>
+    </div>
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Starts</mat-label>
+        <input type="datetime-local"
+            matInput
+            formControlName="startsAt" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Ends</mat-label>
+        <input type="datetime-local"
+            matInput
+            formControlName="expiresAt" />
+      </mat-form-field>
+    </div>
+    <mat-checkbox formControlName="active">Active</mat-checkbox>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button type="button"
+        mat-button
+        mat-dialog-close>Cancel</button>
+    <button type="submit"
+        [disabled]="_invalid"
+        mat-flat-button>Save</button>
+  </mat-dialog-actions>
+</form>

@@ -18,21 +18,21 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { Store } from '@ngrx/store';
 import { map } from 'rxjs';
-import type { MenuItem } from '../../core/models';
-import { MoneyPipe } from '../../shared/money.pipe';
-import { CartActions } from '../../store/cart/cart.actions';
-import { cartFeature } from '../../store/cart/cart.reducer';
+import type { MenuItem } from '../../../core/models';
+import { MoneyPipe } from '../../../shared/money.pipe';
+import { CartActions } from '../../../store/cart/cart.actions';
+import { cartFeature } from '../../../store/cart/cart.reducer';
 import {
   selectCartCount,
   selectQuantityByItem,
   selectTotal,
-} from '../../store/cart/cart.selectors';
-import { MenuActions } from '../../store/menu/menu.actions';
-import { menuFeature } from '../../store/menu/menu.reducer';
-import { selectCategories, selectMenuSections } from '../../store/menu/menu.selectors';
-import { CartPanel } from './cart-panel';
-import { MenuItemRow } from './menu-item-row';
-import { OpenPriceDialog, type OpenPriceResult } from './open-price-dialog';
+} from '../../../store/cart/cart.selectors';
+import { MenuActions } from '../../../store/menu/menu.actions';
+import { menuFeature } from '../../../store/menu/menu.reducer';
+import { selectCategories, selectMenuSections } from '../../../store/menu/menu.selectors';
+import { CartPanel } from '../cart-panel/cart-panel';
+import { MenuItemRow } from '../menu-item-row/menu-item-row';
+import { OpenPriceDialog, type OpenPriceResult } from '../open-price-dialog/open-price-dialog';
 
 type Row =
   | { kind: 'header'; id: string; name: string; count: number }

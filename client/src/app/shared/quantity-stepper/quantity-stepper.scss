@@ -1,0 +1,9 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+}
+.value {
+  min-width: 24px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}

@@ -16,14 +16,14 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { Store } from '@ngrx/store';
-import type { MenuItem, MenuItemInput } from '../../core/models';
-import { ConfirmDialog, type ConfirmData } from '../../shared/confirm-dialog';
-import { MoneyPipe } from '../../shared/money.pipe';
-import { PromptDialog, type PromptData } from '../../shared/prompt-dialog';
-import { MenuActions, SetupActions } from '../../store/menu/menu.actions';
-import { menuFeature } from '../../store/menu/menu.reducer';
-import { selectCategories, selectMenuSections } from '../../store/menu/menu.selectors';
-import { ItemDialog, type ItemDialogData } from './item-dialog';
+import type { MenuItem, MenuItemInput } from '../../../core/models';
+import { ConfirmDialog, type ConfirmData } from '../../../shared/confirm-dialog/confirm-dialog';
+import { MoneyPipe } from '../../../shared/money.pipe';
+import { PromptDialog, type PromptData } from '../../../shared/prompt-dialog/prompt-dialog';
+import { MenuActions, SetupActions } from '../../../store/menu/menu.actions';
+import { menuFeature } from '../../../store/menu/menu.reducer';
+import { selectCategories, selectMenuSections } from '../../../store/menu/menu.selectors';
+import { ItemDialog, type ItemDialogData } from '../item-dialog/item-dialog';
 
 @Component({
   selector: 'app-setup-page',

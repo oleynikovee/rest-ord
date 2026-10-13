@@ -1,0 +1,78 @@
+@let _loaded = loaded();
+@let _orders = orders();
+@let _error = error();
+@let _isAdmin = isAdmin();
+@let _nextCursor = nextCursor();
+@let _loadingMore = loadingMore();
+
+<div class="page">
+  <h1>{{ _isAdmin ? 'All orders' : 'My orders' }}</h1>
+
+  @if (_loaded) {
+    @for (order of _orders; track order.id) {
+      <article class="order"
+          [class.done]="order.status === 'COMPLETED'">
+        <header>
+          <h2>#{{ order.number }}</h2>
+          @if (_isAdmin && order.customerName) {
+            <span class="customer">{{ order.customerName }}</span>
+          }
+          <time [attr.datetime]="order.createdAt">{{ order.createdAt | date: 'shortTime' }}</time>
+          <span class="status"
+              aria-live="polite"
+              [class]="'status status-' + order.status">
+            {{ label(order.status) }}
+          </span>
+        </header>
+        <mat-progress-bar mode="determinate"
+            [value]="progress(order.status)"
+            [attr.aria-label]="'Order ' + order.number + ' progress'" />
+        <ul class="lines">
+          <!-- Order lines have no guaranteed unique id. -->
+          @for (line of order.lines; track $index) {
+            <li>
+              <span>{{ line.quantity }} × {{ line.name }}</span>
+              <span>{{ line.lineTotal | money }}</span>
+            </li>
+          }
+        </ul>
+        <footer>
+          @if (order.discount > 0) {
+            <span class="discount">Discount −{{ order.discount | money }}</span>
+          }
+          <strong>{{ order.total | money }}</strong>
+        </footer>
+      </article>
+    } @empty {
+      <div class="page-error">
+        <p>No orders yet.</p>
+        <a mat-flat-button
+            routerLink="/menu">Go to the menu</a>
+      </div>
+    }
+    @if (_nextCursor !== null) {
+      <div class="more">
+        <button type="button"
+            [disabled]="_loadingMore"
+            (click)="loadMore()"
+            mat-stroked-button>
+          {{ _loadingMore ? 'Loading…' : 'Load older orders' }}
+        </button>
+      </div>
+    }
+  } @else if (_error) {
+    <div class="page-error"
+        role="alert">
+      <p>We couldn't load the orders. {{ _error.message }}</p>
+      <button type="button"
+          (click)="retry()"
+          mat-flat-button>Try again</button>
+    </div>
+  } @else {
+    @for (i of [1, 2, 3]; track $index) {
+      <div class="order skeleton"
+          style="height: 160px"
+          aria-hidden="true"></div>
+    }
+  }
+</div>

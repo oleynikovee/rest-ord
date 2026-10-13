@@ -10,18 +10,8 @@ export interface ConfirmData {
 
 @Component({
   selector: 'app-confirm-dialog',
-  template: `
-    <h2 mat-dialog-title>{{ data.title }}</h2>
-    <mat-dialog-content>{{ data.message }}</mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button type="button"
-          mat-button
-          mat-dialog-close>Cancel</button>
-      <button type="button"
-          mat-flat-button
-          [mat-dialog-close]="true">{{ data.confirm }}</button>
-    </mat-dialog-actions>
-  `,
+  templateUrl: './confirm-dialog.html',
+  styleUrl: './confirm-dialog.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MatButtonModule,

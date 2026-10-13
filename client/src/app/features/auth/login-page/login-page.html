@@ -1,0 +1,103 @@
+@let _mode = mode();
+@let _submitting = submitting();
+@let _error = error();
+@let _loginInvalid = loginInvalid();
+@let _registerInvalid = registerInvalid();
+
+<div class="page">
+  <section class="card"
+      aria-labelledby="auth-title">
+    <h1 id="auth-title">{{ _mode === 'login' ? 'Sign in' : 'Create an account' }}</h1>
+
+    <mat-button-toggle-group class="mode"
+        aria-label="Sign in or register"
+        hideSingleSelectionIndicator
+        [value]="_mode"
+        (change)="setMode($event.value)">
+      <mat-button-toggle value="login">Sign in</mat-button-toggle>
+      <mat-button-toggle value="register">Register</mat-button-toggle>
+    </mat-button-toggle-group>
+
+    @if (_error) {
+      <div class="alert"
+          role="alert">{{ _error.message }}</div>
+    }
+
+    @if (_mode === 'login') {
+      <form class="form"
+          [formGroup]="loginForm"
+          (ngSubmit)="login()">
+        <mat-form-field appearance="outline">
+          <mat-label>Email</mat-label>
+          <input type="email"
+              autocomplete="username"
+              matInput
+              formControlName="email" />
+          <mat-error>Enter a valid email</mat-error>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Password</mat-label>
+          <input type="password"
+              autocomplete="current-password"
+              matInput
+              formControlName="password" />
+          <mat-error>Enter your password</mat-error>
+        </mat-form-field>
+        <button type="submit"
+            [disabled]="_loginInvalid || _submitting"
+            mat-flat-button>
+          @if (_submitting) {
+            <mat-spinner diameter="18"
+                aria-label="Signing in" />
+          } @else {
+            Sign in
+          }
+        </button>
+      </form>
+      <p class="demo">
+        Demo accounts: <code>guest&#64;trattoria.local</code> / <code>guest12345</code> (customer),
+        <code>admin&#64;trattoria.local</code> / <code>admin12345</code> (admin).
+      </p>
+    } @else {
+      <form class="form"
+          [formGroup]="registerForm"
+          (ngSubmit)="register()">
+        <mat-form-field appearance="outline">
+          <mat-label>Name</mat-label>
+          <input autocomplete="name"
+              maxlength="60"
+              matInput
+              formControlName="name" />
+          <mat-error>Enter your name</mat-error>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Email</mat-label>
+          <input type="email"
+              autocomplete="email"
+              matInput
+              formControlName="email" />
+          <mat-error>Enter a valid email</mat-error>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Password</mat-label>
+          <input type="password"
+              autocomplete="new-password"
+              matInput
+              formControlName="password" />
+          <mat-hint>At least 8 characters</mat-hint>
+          <mat-error>At least 8 characters</mat-error>
+        </mat-form-field>
+        <button type="submit"
+            [disabled]="_registerInvalid || _submitting"
+            mat-flat-button>
+          @if (_submitting) {
+            <mat-spinner diameter="18"
+                aria-label="Creating account" />
+          } @else {
+            Create account
+          }
+        </button>
+      </form>
+    }
+  </section>
+</div>
