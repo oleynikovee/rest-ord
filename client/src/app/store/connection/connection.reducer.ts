@@ -6,7 +6,6 @@ export type ConnectionStatus = 'connecting' | 'online' | 'reconnecting' | 'offli
 
 export interface ConnectionState {
   status: ConnectionStatus;
-  /** Position in the server's event log; replay resumes after it. 0 until the menu is loaded. */
   lastSeq: number;
 }
 
@@ -28,7 +27,6 @@ export const connectionFeature = createFeature({
       ...state,
       lastSeq: Math.max(state.lastSeq, seq),
     })),
-    // A snapshot reflects the log up to its `seq`.
     on(MenuActions.loadSuccess, (state, { snapshot }): ConnectionState => ({
       ...state,
       lastSeq: Math.max(state.lastSeq, snapshot.seq),

@@ -32,7 +32,6 @@ body {
   --mat-snack-bar-supporting-text-color: var(--mat-sys-on-error-container);
 }
 
-/* Reserved-size placeholder: keeps layout stable while data loads. */
 .skeleton {
   border-radius: 6px;
   background: linear-gradient(

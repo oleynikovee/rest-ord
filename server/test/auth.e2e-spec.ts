@@ -109,7 +109,6 @@ describe('Authentication and authorization (e2e)', () => {
     const admin = await signIn(app, ADMIN.email, ADMIN.password);
 
     const aliceOrder = (await alice.post('/api/orders').set('Idempotency-Key', 'shared-key-1').send(order).expect(201)).body as Order;
-    // The same client key from another user is a different order, never Alice's one.
     const bobOrder = (await bob.post('/api/orders').set('Idempotency-Key', 'shared-key-1').send(order).expect(201)).body as Order;
     expect(bobOrder.id).not.toBe(aliceOrder.id);
     expect(aliceOrder).toMatchObject({ customerName: 'Alice' });

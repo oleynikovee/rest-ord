@@ -10,7 +10,6 @@ export class OrdersQueryDto {
   @Max(ORDERS_PAGE_SIZE.max)
   limit?: number;
 
-  /** Cursor: the `nextCursor` of the previous page. */
   @IsOptional()
   @Type(() => Number)
   @IsInt()

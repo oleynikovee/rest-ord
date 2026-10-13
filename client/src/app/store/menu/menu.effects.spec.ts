@@ -38,11 +38,9 @@ describe('menu effects: optimistic locking', () => {
 
     actions$.next(SetupActions.updateItem({ previous: pizza, changes: { available: false } }));
     actions$.next(SetupActions.updateItem({ previous: pizza, changes: { available: true } }));
-    // The second request waits for the first one.
     expect(api.updateItem).toHaveBeenCalledTimes(1);
     expect(api.updateItem.mock.calls[0][0]).toEqual({ id: 'pizza', version: 3 });
 
-    // The reducer stores the server's answer (version 4) before the next request goes out.
     store.overrideSelector(selectItemEntities, { pizza: { ...pizza, version: 4 } });
     store.refreshState();
     responses[0].next({ ...pizza, available: false, version: 4 });

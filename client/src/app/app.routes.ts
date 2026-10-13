@@ -1,7 +1,6 @@
 import type { Routes } from '@angular/router';
 import { adminGuard, authGuard } from './core/auth.guards';
 
-/** Every page is lazy-loaded so the initial bundle stays small. */
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'menu' },
   {

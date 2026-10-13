@@ -4,7 +4,6 @@ import { Store } from '@ngrx/store';
 import { type Observable, filter, map, take } from 'rxjs';
 import { type AuthState, authFeature } from '../store/auth/auth.reducer';
 
-/** Waits until the server confirmed whether there is a session. */
 function resolvedAuth(): Observable<AuthState> {
   return inject(Store)
     .select(authFeature.selectAuthState)
@@ -14,7 +13,6 @@ function resolvedAuth(): Observable<AuthState> {
     );
 }
 
-/** UX only: the server enforces the same rules on every request. */
 export const authGuard: CanActivateFn = (_, state): Observable<boolean | UrlTree> => {
   const router = inject(Router);
   return resolvedAuth().pipe(

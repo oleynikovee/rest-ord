@@ -40,7 +40,6 @@ import { RedisThrottlerStorage } from './redis/redis-throttler.storage.js';
 import { generateSeedMenu } from './seed.js';
 
 const PG = Symbol('PG');
-/** ThrottlerStorage shared by all instances, or `null` for the in-process default. */
 export const RATE_LIMIT_STORAGE = Symbol('RATE_LIMIT_STORAGE');
 const REDIS = Symbol('REDIS');
 
@@ -49,7 +48,6 @@ interface RedisClients {
   subscriber: Redis;
 }
 
-/** Connects storage, seeds an empty menu and closes connections on shutdown. */
 @Injectable()
 class InfrastructureLifecycle implements OnModuleInit, OnApplicationShutdown {
   private readonly logger = new Logger('Infrastructure');
@@ -121,7 +119,6 @@ export class InfrastructureModule {
       {
         provide: OrdersRepository,
         inject: [PG, PromoRepository, EventLog],
-        // In memory, redemption shares the promo store; in Postgres it is a transaction.
         useFactory: (pg: PgDatabase | null, promos: PromoRepository, log: EventLog) =>
           pg
             ? new PgOrdersRepository(pg)

@@ -2,10 +2,6 @@ import { Logger } from '@nestjs/common';
 import type { Redis } from 'ioredis';
 import { EventBus } from '../../domain/ports.js';
 
-/**
- * Redis Pub/Sub fan-out: every API instance receives every event and pushes it
- * to its own WebSocket clients. A lightweight stand-in for Kafka in this prototype.
- */
 export class RedisEventBus extends EventBus {
   private readonly logger = new Logger(RedisEventBus.name);
   private readonly handlers = new Map<string, Set<(payload: unknown) => void>>();

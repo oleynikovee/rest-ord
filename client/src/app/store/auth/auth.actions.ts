@@ -13,7 +13,6 @@ export const AuthActions = createActionGroup({
     'Sign In Failure': props<{ error: ApiError }>(),
     Logout: emptyProps(),
     'Logout Success': emptyProps(),
-    /** The server answered 401 to a request that needed a session. */
     'Session Expired': emptyProps(),
   },
 });

@@ -11,10 +11,6 @@ import { IS_PUBLIC, REQUIRED_ROLES } from './auth.decorators.js';
 import { AuthService } from './auth.service.js';
 import { type AuthenticatedRequest, SESSION_COOKIE } from './auth.types.js';
 
-/**
- * Global guard: every HTTP route requires a valid session unless marked @Public(),
- * and @Roles() additionally checks the role. Public routes still see the user if logged in.
- */
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(

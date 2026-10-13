@@ -1,13 +1,11 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import type { ApiErrorBody, Category, MenuChangeIssue, MenuItem, PromoCode } from './models';
 
-/** A serialisable error that is safe to keep in the store and show to the user. */
 export interface ApiError {
   status: number;
   code: string;
   message: string;
   issues?: MenuChangeIssue[];
-  /** With 412 VERSION_CONFLICT: what the entity looks like now. */
   current?: Category | MenuItem | PromoCode;
 }
 
@@ -35,7 +33,6 @@ export function toApiError(error: unknown): ApiError {
   };
 }
 
-/** Errors worth retrying automatically with the same request (and idempotency key). */
 export function isTransient(error: ApiError): boolean {
   return error.status === 0 || error.status === 502 || error.status === 503 || error.status === 504;
 }

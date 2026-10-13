@@ -73,7 +73,6 @@ describe('Menu and orders (e2e, in-memory storage)', () => {
       issues: [{ itemId: item.id, kind: 'unavailable' }],
     });
 
-    // The key is released, so the same checkout can be retried after the fix.
     await admin
       .patch(`/api/items/${item.id}`)
       .set('If-Match', `"${item.version + 1}"`)
@@ -122,7 +121,6 @@ describe('Menu and orders (e2e, in-memory storage)', () => {
     expect(first.items.map((o) => o.number)).toEqual([5, 4]);
     expect(first.nextCursor).toBe(4);
 
-    // A new order arriving between page loads must not shift the next page.
     await placeOrder('page-key-6').expect(201);
 
     const second = (await customer.get(`/api/orders?limit=2&before=${first.nextCursor}`).expect(200)).body as OrdersPage;

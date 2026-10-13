@@ -28,7 +28,6 @@
             [value]="progress(order.status)"
             [attr.aria-label]="'Order ' + order.number + ' progress'" />
         <ul class="lines">
-          <!-- Order lines have no guaranteed unique id. -->
           @for (line of order.lines; track $index) {
             <li>
               <span>{{ line.quantity }} × {{ line.name }}</span>

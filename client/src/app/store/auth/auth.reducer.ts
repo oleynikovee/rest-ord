@@ -7,7 +7,6 @@ export type AuthStatus = 'unknown' | 'anonymous' | 'authenticated';
 
 export interface AuthState {
   user: User | null;
-  /** `unknown` until the server confirmed whether there is a session. */
   status: AuthStatus;
   submitting: boolean;
   error: ApiError | null;
@@ -36,7 +35,6 @@ export const authFeature = createFeature({
       user,
       status: user ? 'authenticated' : 'anonymous',
     })),
-    // The server could not be asked: behave as signed out, protected calls will tell.
     on(AuthActions.sessionLoadFailure, (state): AuthState => signedOut(state)),
     on(AuthActions.login, AuthActions.register, (state): AuthState => ({
       ...state,

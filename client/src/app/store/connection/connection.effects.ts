@@ -14,7 +14,6 @@ import { connectionFeature } from './connection.reducer';
 import { envelopeToActions } from './event-actions';
 import { RealtimeService } from './realtime.service';
 
-/** Initial data is loaded over HTTP so the app works even if WebSockets are blocked. */
 export const loadInitialData = createEffect(
   (actions$ = inject(Actions)) =>
     actions$.pipe(
@@ -24,7 +23,6 @@ export const loadInitialData = createEffect(
   { functional: true },
 );
 
-/** Orders need a session: load them once it is known, and again after every sign-in. */
 export const loadOrdersForSession = createEffect(
   (actions$ = inject(Actions)) =>
     actions$.pipe(
@@ -54,11 +52,6 @@ export const realtimeEvents = createEffect(
   { functional: true },
 );
 
-/**
- * After every (re)connect, fetch only the events missed in between, page by page,
- * instead of reloading full snapshots. Snapshots are reloaded only when the server says
- * the log no longer goes back that far (`reset`).
- */
 export const replayMissedEvents = createEffect(
   (actions$ = inject(Actions), store = inject(Store), api = inject(ApiService)) =>
     actions$.pipe(
@@ -67,7 +60,6 @@ export const replayMissedEvents = createEffect(
         store.select(connectionFeature.selectLastSeq),
         store.select(authFeature.selectStatus),
       ]),
-      // Before the first snapshot there is nothing to resume from.
       filter(([, lastSeq]) => lastSeq > 0),
       switchMap(([, lastSeq, authStatus]) =>
         api.getEvents(lastSeq).pipe(
@@ -89,7 +81,6 @@ export const replayMissedEvents = createEffect(
   { functional: true },
 );
 
-/** If the replay itself fails, fall back to fresh snapshots. */
 export const reloadAfterReplayFailure = createEffect(
   (actions$ = inject(Actions), store = inject(Store)) =>
     actions$.pipe(
@@ -107,7 +98,6 @@ export const browserConnectivity = createEffect(
     typeof window === 'undefined'
       ? of()
       : merge(
-          // Opened while already offline (e.g. from the service worker cache): no event fires.
           navigator.onLine ? EMPTY : of(ConnectionActions.browserOffline()),
           fromEvent(window, 'online').pipe(map(() => ConnectionActions.browserOnline())),
           fromEvent(window, 'offline').pipe(map(() => ConnectionActions.browserOffline())),
@@ -115,10 +105,6 @@ export const browserConnectivity = createEffect(
   { functional: true },
 );
 
-/**
- * Coming back online, an old WebSocket may look alive while events were lost: reconnect
- * on purpose, which also triggers the replay of missed events.
- */
 export const reconnectWhenOnline = createEffect(
   (actions$ = inject(Actions), realtime = inject(RealtimeService)) =>
     actions$.pipe(

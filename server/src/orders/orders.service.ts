@@ -25,7 +25,6 @@ import { priceOrder } from './pricing.js';
 
 export interface PlaceOrderResult {
   order: Order;
-  /** True when the same idempotency key was already used: nothing new was created. */
   replayed: boolean;
 }
 
@@ -41,10 +40,8 @@ export class OrdersService {
     private readonly metrics: MetricsService,
   ) {}
 
-  /** Admins see every order, customers only their own. */
   async list(user: User, query: OrdersQuery): Promise<OrdersPage> {
     const limit = query.limit ?? ORDERS_PAGE_SIZE.default;
-    // One extra row tells whether an older page exists without a COUNT query.
     const rows = await this.orders.list({
       limit: limit + 1,
       userId: user.role === 'admin' ? undefined : user.id,
@@ -59,7 +56,6 @@ export class OrdersService {
     clientKey: string,
     dto: CreateOrderDto,
   ): Promise<PlaceOrderResult> {
-    // Keys are scoped per user: another user's key can never return someone else's order.
     const idempotencyKey = `${user.id}:${clientKey}`;
     const state = await this.idempotency.acquire(idempotencyKey);
 
@@ -102,7 +98,6 @@ export class OrdersService {
         }
       }
 
-      // The client never sends a discount amount: it is computed from the code here.
       const promo = dto.promoCode
         ? await this.promos.quote(user, dto.promoCode, result.order.subtotal)
         : null;
@@ -136,7 +131,6 @@ export class OrdersService {
       }
       const order = created.order;
       await this.idempotency.complete(idempotencyKey, order.id);
-      // Its event was written in the same transaction; the outbox relay broadcasts it.
       this.logger.log(`Order #${order.number} placed, total ${order.total}`);
       this.metrics.ordersPlaced.inc({ promo: order.promoCode ? 'yes' : 'no' });
       this.metrics.orderRevenue.inc(order.total);
@@ -144,7 +138,6 @@ export class OrdersService {
     } catch (error) {
       const reason = (error as { response?: { code?: unknown } }).response?.code;
       if (typeof reason === 'string') this.metrics.checkoutRejections.inc({ reason });
-      // Free the key so the user can fix the cart and retry with the same key.
       await this.idempotency.release(idempotencyKey).catch(() => undefined);
       throw error;
     }

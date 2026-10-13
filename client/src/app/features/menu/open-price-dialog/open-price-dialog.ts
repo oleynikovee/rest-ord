@@ -13,7 +13,6 @@ export interface OpenPriceResult {
   quantity: number;
 }
 
-/** Asks for the price (and quantity) of an open-price item when it is added to the order. */
 @Component({
   selector: 'app-open-price-dialog',
   templateUrl: './open-price-dialog.html',

@@ -27,10 +27,6 @@ import { CartActions } from './cart.actions';
 import { CART_STORAGE_KEY, cartFeature } from './cart.reducer';
 import { selectSubtotal } from './cart.selectors';
 
-/**
- * `exhaustMap` ignores repeated clicks while a request is in flight, and the
- * idempotency key makes automatic retries after network errors safe.
- */
 export const checkout = createEffect(
   (
     actions$ = inject(Actions),
@@ -57,8 +53,6 @@ export const checkout = createEffect(
               const apiError = toApiError(error);
               const retryable = isTransient(apiError) || apiError.code === 'ORDER_IN_PROGRESS';
               if (!retryable) return throwError(() => error);
-              // Offline: wait for the network instead of burning retries. Safe to resend:
-              // the same idempotency key can never create a second order.
               return navigator.onLine ? timer(1000 * 2 ** (attempt - 1)) : fromEvent(window, 'online').pipe(take(1));
             },
           }),
@@ -72,7 +66,6 @@ export const checkout = createEffect(
   { functional: true },
 );
 
-/** The server's 409 carries the current state of changed items: apply it to the menu right away. */
 export const syncMenuFromCheckoutIssues = createEffect(
   (actions$ = inject(Actions)) =>
     actions$.pipe(
@@ -98,7 +91,6 @@ export const notifyCheckoutSuccess = createEffect(
   ) =>
     actions$.pipe(
       ofType(CartActions.checkoutSuccess),
-      // switchMap: the previous snack bar is replaced, so its action stream is dropped too.
       switchMap(({ order }) =>
         notify.info(`Order #${order.number} placed`, 'View orders').onAction(),
       ),
@@ -141,19 +133,21 @@ export const applyPromo = createEffect(
   { functional: true },
 );
 
+function saveCart(json: string): boolean {
+  try {
+    localStorage.setItem(CART_STORAGE_KEY, json);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export const persistCart = createEffect(
   (store = inject(Store)) =>
     store.select(cartFeature.selectCartState).pipe(
-      // Written synchronously: a reload right after an edit must not lose it.
       map(({ lines, promo, checkoutKey }) => JSON.stringify({ lines, promo, checkoutKey })),
       distinctUntilChanged(),
-      tap((json) => {
-        try {
-          localStorage.setItem(CART_STORAGE_KEY, json);
-        } catch {
-          // Storage may be full or disabled (private mode): the cart still works in memory.
-        }
-      }),
+      tap((json) => saveCart(json)),
     ),
   { functional: true, dispatch: false },
 );

@@ -20,7 +20,6 @@ import type {
   ValidatePromoRequest,
 } from './models';
 
-/** Retries idempotent GETs on network / gateway errors with exponential backoff. */
 const retryReads = <T>(): MonoTypeOperatorFunction<T> =>
   retry<T>({
     count: 3,
@@ -75,7 +74,6 @@ export class ApiService {
     return this.http.patch<PromoCode>(`/api/promo-codes/${promo.id}`, input, ifMatch(promo));
   }
 
-  /** Events after `after` that this user may see (see EventsPage). */
   getEvents(after: number): Observable<EventsPage> {
     return this.http.get<EventsPage>('/api/events', { params: { after } }).pipe(retryReads());
   }
@@ -84,7 +82,6 @@ export class ApiService {
     return this.http.get<MenuSnapshot>('/api/menu').pipe(retryReads());
   }
 
-  /** `before`: the `nextCursor` of the previous page. */
   getOrders(before?: number): Observable<OrdersPage> {
     const params = before === undefined ? undefined : { before };
     return this.http.get<OrdersPage>('/api/orders', { params }).pipe(retryReads());
@@ -100,7 +97,6 @@ export class ApiService {
     return this.http.post<Category>('/api/categories', { name });
   }
 
-  // Writes send the version they are based on: the server refuses them (412) if it is outdated.
   updateCategory(category: Versioned, name: string): Observable<Category> {
     return this.http.patch<Category>(`/api/categories/${category.id}`, { name }, ifMatch(category));
   }

@@ -2,7 +2,6 @@ import type { ThrottlerStorage } from '@nestjs/throttler';
 import type { ThrottlerStorageRecord } from '@nestjs/throttler/dist/throttler-storage-record.interface.js';
 import type { Redis } from 'ioredis';
 
-/** Count, expire and block in one atomic step, shared by every API instance. */
 const SCRIPT = `
 local hitsKey, blockKey = KEYS[1], KEYS[2]
 local ttl, limit, block = tonumber(ARGV[1]), tonumber(ARGV[2]), tonumber(ARGV[3])
@@ -18,10 +17,6 @@ end
 return {hits, expires, 0, 0}
 `;
 
-/**
- * Rate limits must be shared between instances: with per-process counters, N replicas
- * would allow N times the configured rate.
- */
 export class RedisThrottlerStorage implements ThrottlerStorage {
   constructor(private readonly redis: Redis) {}
 

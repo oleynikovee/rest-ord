@@ -3,7 +3,6 @@ import { Redis } from 'ioredis';
 
 const logger = new Logger('Redis');
 
-/** ioredis reconnects on its own; we only make sure errors are logged and not thrown. */
 export function createRedis(url: string, name: string): Redis {
   const redis = new Redis(url, {
     connectionName: name,

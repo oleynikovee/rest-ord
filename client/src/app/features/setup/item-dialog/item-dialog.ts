@@ -15,7 +15,6 @@ export interface ItemDialogData {
   categories: Category[];
   categoryId: string;
   item?: MenuItem;
-  /** Pre-set values, e.g. turning off "open price" for an item without a price. */
   overrides?: Partial<MenuItemInput>;
 }
 
@@ -73,7 +72,6 @@ export class ItemDialog {
   protected readonly invalid = invalidSignal(this.form);
 
   constructor() {
-    // Price is required only for fixed-price items.
     this.form.controls.openPrice.valueChanges.pipe(takeUntilDestroyed()).subscribe((open) => {
       const price = this.form.controls.price;
       if (open) price.removeValidators(Validators.required);

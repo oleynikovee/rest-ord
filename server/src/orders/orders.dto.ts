@@ -24,7 +24,6 @@ export class OrderLineDto {
   @Max(99)
   quantity: number;
 
-  /** Cents: the price the user saw, or entered for an open-price item. */
   @IsInt()
   @Min(0)
   @Max(MAX_PRICE)
@@ -42,7 +41,6 @@ export class CreateOrderDto {
   @Type(() => OrderLineDto)
   lines: OrderLineDto[];
 
-  /** Optional promo code; the server computes the discount. */
   @IsOptional()
   @IsString()
   @MaxLength(40)

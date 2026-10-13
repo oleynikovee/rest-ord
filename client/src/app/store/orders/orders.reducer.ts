@@ -12,7 +12,6 @@ export interface OrdersState extends EntityState<Order> {
   loaded: boolean;
   loading: boolean;
   loadingMore: boolean;
-  /** Order number to load older orders from; `null` when everything is loaded. */
   nextCursor: number | null;
   error: ApiError | null;
 }
@@ -35,7 +34,6 @@ export const ordersFeature = createFeature({
   reducer: createReducer(
     initialState,
     on(OrdersActions.load, (state) => ({ ...state, loading: true, error: null })),
-    // The first page replaces the list: older pages are loaded again on demand.
     on(OrdersActions.loadSuccess, (state, { page }) =>
       adapter.setAll(
         page.items.map((order) => (isNewer(state, order) ? order : state.entities[order.id]!)),
@@ -51,7 +49,6 @@ export const ordersFeature = createFeature({
       ),
     ),
     on(OrdersActions.loadMoreFailure, (state) => ({ ...state, loadingMore: false })),
-    // Another user may sign in on this device next: never keep someone else's orders.
     on(AuthActions.logoutSuccess, AuthActions.sessionExpired, () => initialState),
     on(OrdersActions.orderUpserted, CartActions.checkoutSuccess, (state, { order }) =>
       isNewer(state, order) ? adapter.upsertOne(order, state) : state,

@@ -9,7 +9,6 @@ import { loadConfig } from '../src/config.js';
 export const ADMIN = { email: 'admin@test.local', password: 'admin-password' };
 export const CUSTOMER = { email: 'guest@trattoria.local', password: 'guest12345' };
 
-/** Full app on in-memory storage, with the kitchen simulator switched off. */
 export async function createTestApp(): Promise<INestApplication<App>> {
   const config = loadConfig({
     ADMIN_EMAIL: ADMIN.email,
@@ -27,7 +26,6 @@ export async function createTestApp(): Promise<INestApplication<App>> {
   return app;
 }
 
-/** A supertest agent keeps the session cookie between requests, like a browser. */
 export async function signIn(
   app: INestApplication<App>,
   email: string,

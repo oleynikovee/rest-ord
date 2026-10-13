@@ -15,7 +15,6 @@ module.exports = defineConfig([
     ],
     processor: angular.processInlineTemplates,
     rules: {
-      // TypeScript style guide: explicit return types (inline callbacks are inferred from context).
       '@typescript-eslint/explicit-function-return-type': [
         'error',
         {
@@ -24,14 +23,12 @@ module.exports = defineConfig([
           allowHigherOrderFunctions: true,
         },
       ],
-      // TypeScript style guide: no arrow functions as class methods.
       'no-restricted-syntax': [
         'error',
         {
           selector: 'PropertyDefinition > ArrowFunctionExpression',
           message: 'Use a class method instead of an arrow function property.',
         },
-        // TypeScript style guide: `const ... as const` instead of enums.
         {
           selector: 'TSEnumDeclaration',
           message: 'Use a `const ... as const` object or array instead of an enum.',

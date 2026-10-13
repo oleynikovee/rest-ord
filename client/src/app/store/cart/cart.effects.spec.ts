@@ -67,7 +67,6 @@ describe('cart effects', () => {
 
   it('retries network errors with the same key', async () => {
     let calls = 0;
-    // Like HttpClient: a cold observable that re-sends the request on every subscription.
     api.placeOrder.mockReturnValue(
       defer(() =>
         ++calls < 3 ? throwError(() => new HttpErrorResponse({ status: 0 })) : of(order()),
@@ -78,7 +77,7 @@ describe('cart effects', () => {
     await vi.runAllTimersAsync();
 
     expect(await result).toEqual(CartActions.checkoutSuccess({ order: order() }));
-    expect(api.placeOrder).toHaveBeenCalledTimes(1); // retry re-subscribes to the same request
+    expect(api.placeOrder).toHaveBeenCalledTimes(1);
     expect(calls).toBe(3);
   });
 

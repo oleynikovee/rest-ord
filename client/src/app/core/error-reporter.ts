@@ -10,11 +10,6 @@ interface ClientConfig {
 
 type Capture = (error: unknown) => void;
 
-/**
- * Sends unexpected errors to Sentry when the server provides a DSN (GET /api/config).
- * The SDK is loaded lazily and only then, so it costs nothing when reporting is off.
- * Errors raised before it is ready are queued.
- */
 @Injectable({ providedIn: 'root' })
 export class ErrorReporter {
   private readonly http = inject(HttpClient);
@@ -38,7 +33,6 @@ export class ErrorReporter {
       this.capture = (error) => Sentry.captureException(error);
       this.queue.splice(0).forEach((error) => this.capture?.(error));
     } catch {
-      // Reporting must never break the app.
       this.disable();
     }
   }
@@ -54,7 +48,6 @@ export class ErrorReporter {
   }
 }
 
-/** Keeps Angular's console output and also reports the error. */
 @Injectable()
 export class ReportingErrorHandler extends ErrorHandler {
   private readonly reporter = inject(ErrorReporter);

@@ -28,7 +28,6 @@ export class PromoCodeDto {
   @IsIn(PROMO_KINDS)
   kind: PromoKind;
 
-  /** FIXED: cents. PERCENT: 1-100. */
   @IsInt()
   @Min(1)
   @Max(1_000_000)

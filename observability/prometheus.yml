@@ -11,7 +11,6 @@ alerting:
         - targets: ['alertmanager:9093']
 
 scrape_configs:
-  # Every API replica: the service name resolves to all of them.
   - job_name: trattoria-api
     dns_sd_configs:
       - names: ['app']

@@ -62,13 +62,11 @@ const itemParams = (input: MenuItemInput): unknown[] => [
   input.openPrice,
 ];
 
-/** Every write commits together with its event in the outbox (see PgEventLog). */
 export class PgMenuRepository extends MenuRepository {
   constructor(private readonly db: PgDatabase) {
     super();
   }
 
-  /** One consistent snapshot: the data and the log position it corresponds to. */
   async getSnapshot(): Promise<MenuSnapshot> {
     const client = await this.db.pool.connect();
     try {
@@ -172,7 +170,6 @@ export class PgMenuRepository extends MenuRepository {
     });
   }
 
-  /** The version check is part of the UPDATE itself, so concurrent edits cannot both win. */
   async updateItem(
     id: string,
     input: MenuItemInput,
@@ -233,10 +230,6 @@ export class PgMenuRepository extends MenuRepository {
     });
   }
 
-  /**
-   * A conditional write plus its event in one transaction. No matching row means
-   * either "gone" or "changed by someone else"; the current state tells which.
-   */
   private async versioned<Row extends pg.QueryResultRow, T>(
     write: (client: pg.PoolClient) => Promise<pg.QueryResult<Row>>,
     map: (row: Row) => T,

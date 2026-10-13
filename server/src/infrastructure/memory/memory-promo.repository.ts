@@ -39,10 +39,6 @@ export class MemoryPromoRepository extends PromoRepository {
     return { status: 'ok', value: { ...next } };
   }
 
-  /**
-   * Called by the in-memory orders repository inside its synchronous create, which
-   * makes check-and-increment atomic in one process (Postgres uses a row lock).
-   */
   redeem({ promoId, userId }: PromoRedemption): 'ok' | 'exhausted' | 'already_used' {
     const promo = this.promos.get(promoId);
     if (!promo || (promo.usageLimit !== null && promo.usedCount >= promo.usageLimit)) return 'exhausted';

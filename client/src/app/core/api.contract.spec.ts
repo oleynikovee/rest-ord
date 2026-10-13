@@ -1,9 +1,3 @@
-/**
- * Consumer contract test: every request ApiService can make must exist in the
- * published OpenAPI contract (same method and path) and send a body that matches
- * the documented request schema. Together with the provider tests on the server,
- * a breaking change on either side fails CI.
- */
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';

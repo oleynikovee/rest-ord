@@ -19,10 +19,6 @@ import {
 } from '../../../store/cart/cart.selectors';
 import { describeProblem } from '../cart-problem';
 
-/**
- * Final confirmation. It reads the cart live, so a price or availability change
- * that arrives while the dialog is open is shown and blocks confirmation.
- */
 @Component({
   selector: 'app-checkout-dialog',
   templateUrl: './checkout-dialog.html',
@@ -56,7 +52,6 @@ export class CheckoutDialog {
   }
 
   protected confirm(): void {
-    // The key is only used if there is no pending attempt for this exact cart.
     this.store.dispatch(CartActions.checkout({ key: newIdempotencyKey() }));
   }
 }

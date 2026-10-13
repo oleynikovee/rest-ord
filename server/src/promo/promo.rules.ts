@@ -4,10 +4,6 @@ export type PromoCheck =
   | { ok: true; discount: Cents }
   | { ok: false; code: (typeof PROMO_ERRORS)[keyof typeof PROMO_ERRORS]; message: string };
 
-/**
- * Every rule a promo code must pass for a given customer and subtotal. The limits
- * are checked again atomically when the order is stored.
- */
 export function checkPromo(
   promo: PromoCode | null,
   subtotal: Cents,

@@ -20,7 +20,6 @@ import { provideAppStore } from './store';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    // Default since Angular 21; stated explicitly so the app never falls back to zone.js.
     provideZonelessChangeDetection(),
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
@@ -28,11 +27,9 @@ export const appConfig: ApplicationConfig = {
     { provide: ErrorHandler, useClass: ReportingErrorHandler },
     provideAppInitializer(() => {
       inject(MatIconRegistry).setDefaultFontSetClass('material-symbols-outlined');
-      // Not awaited: error reporting must not delay the first render.
       void inject(ErrorReporter).init();
       inject(AppUpdates).watch();
     }),
-    // Offline app shell and cached menu (see ngsw-config.json); production builds only.
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',

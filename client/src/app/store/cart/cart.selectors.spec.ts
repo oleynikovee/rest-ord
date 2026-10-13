@@ -32,7 +32,7 @@ describe('cart selectors', () => {
       description: '',
       discount: 0,
     };
-    expect(selectDiscount.projector(subtotal, percent)).toBe(150); // 10% = 200, capped at 150
+    expect(selectDiscount.projector(subtotal, percent)).toBe(150);
     expect(selectTotal.projector(subtotal, 150)).toBe(1850);
 
     const minimum = { ...percent, rule: { ...percent.rule, minOrderAmount: 3000 } };

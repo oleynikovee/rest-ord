@@ -7,9 +7,7 @@ import type {
 export interface RequestedLine {
   itemId: string;
   quantity: number;
-  /** For regular items: the price the user saw. For open-price items: the price they entered. */
   unitPrice: number;
-  /** Whether the user saw the item as open-price. */
   openPrice: boolean;
 }
 
@@ -23,10 +21,6 @@ export type PricingResult =
   | { ok: false; reason: 'menu_changed'; issues: MenuChangeIssue[] }
   | { ok: false; reason: 'invalid_open_price'; itemId: string };
 
-/**
- * Prices an order against the current menu. Every difference between what the
- * user saw and the current menu is reported, so nothing changes behind their back.
- */
 export function priceOrder(lines: RequestedLine[], menu: Map<string, MenuItem>): PricingResult {
   const issues: MenuChangeIssue[] = [];
   const orderLines: OrderLine[] = [];

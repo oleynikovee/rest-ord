@@ -6,7 +6,6 @@ import {
 const TTL_MS = 24 * 60 * 60 * 1000;
 const PENDING = '__pending__';
 
-/** Single-process equivalent of Redis `SET key value NX EX ttl`. */
 export class MemoryIdempotencyStore extends IdempotencyStore {
   private readonly entries = new Map<string, { value: string; expiresAt: number }>();
 

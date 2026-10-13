@@ -11,7 +11,6 @@ import { normalizePromoCode, type PromoCode, type PromoCodeInput, type PromoKind
 import { invalidSignal } from '../../../shared/form-signals';
 import { toCents } from '../../../shared/money.pipe';
 
-/** `<input type="datetime-local">` works in local time without a zone. */
 function toLocalInput(iso: string | null): string {
   if (!iso) return '';
   const date = new Date(iso);

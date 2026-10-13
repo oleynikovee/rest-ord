@@ -25,7 +25,6 @@ groups:
         annotations:
           summary: 'p95 API latency is above 1 s'
 
-      # Events are committed but not reaching clients: live updates are delayed.
       - alert: OutboxStuck
         expr: max(outbox_oldest_pending_age_seconds) > 30
         for: 2m

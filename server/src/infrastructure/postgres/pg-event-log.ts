@@ -4,9 +4,7 @@ import type { EventEnvelope, LoggedEvent } from '../../domain/models.js';
 import { EventLog } from '../../domain/ports.js';
 import type { PgDatabase } from './pg-database.js';
 
-/** Serialises outbox appends so `seq` order equals commit order (no "holes" a reader could skip). */
 const APPEND_LOCK_ID = 42_002;
-/** Held by the single instance that publishes the outbox. */
 const RELAY_LOCK_ID = 42_003;
 const CHANNEL = 'outbox_appended';
 
@@ -19,10 +17,6 @@ interface OutboxRow {
 const toEnvelope = (row: OutboxRow): EventEnvelope =>
   ({ seq: Number(row.seq), topic: row.topic, event: row.payload }) as EventEnvelope;
 
-/**
- * Writes the event inside the caller's transaction. The advisory lock is taken at the
- * end of the transaction's work and released by COMMIT/ROLLBACK, which keeps it short.
- */
 export async function appendEvent(client: pg.PoolClient, event: LoggedEvent): Promise<void> {
   await client.query('SELECT pg_advisory_xact_lock($1)', [APPEND_LOCK_ID]);
   await client.query('INSERT INTO outbox (topic, payload) VALUES ($1, $2)', [
@@ -34,7 +28,6 @@ export async function appendEvent(client: pg.PoolClient, event: LoggedEvent): Pr
 
 export class PgEventLog extends EventLog {
   private readonly logger = new Logger(PgEventLog.name);
-  /** Dedicated connection: holds the relay lock and LISTENs for new events. */
   private leaderClient: pg.PoolClient | null = null;
   private readonly listeners = new Set<() => void>();
 
@@ -94,7 +87,6 @@ export class PgEventLog extends EventLog {
         client.release();
         return false;
       }
-      // If this connection dies, Postgres releases the lock and another instance takes over.
       client.on('error', (error) => {
         this.logger.warn(`Relay connection lost: ${error.message}`);
         this.leaderClient = null;

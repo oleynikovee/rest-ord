@@ -1,8 +1,3 @@
-# Alerts are visible at http://localhost:9093. To get notified, replace the
-# receiver with Slack, e-mail, PagerDuty or a webhook, e.g.:
-#   slack_configs:
-#     - api_url: https://hooks.slack.com/services/...
-#       channel: '#alerts'
 route:
   receiver: default
   group_by: ['alertname']

@@ -119,7 +119,6 @@ export class MemoryMenuRepository extends MenuRepository {
     return result;
   }
 
-  /** Compare-and-set on the version; `next = null` deletes. Synchronous, so atomic in one process. */
   private write<T extends { version: number }>(
     store: Map<string, T>,
     id: string,

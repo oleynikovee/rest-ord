@@ -29,7 +29,6 @@ export const loadMoreOrders = createEffect(
       ofType(OrdersActions.loadMore),
       concatLatestFrom(() => store.select(ordersFeature.selectNextCursor)),
       filter(([, cursor]) => cursor !== null),
-      // A second click while a page is loading is ignored.
       exhaustMap(([, cursor]) =>
         api.getOrders(cursor ?? undefined).pipe(
           map((page) => OrdersActions.loadMoreSuccess({ page })),

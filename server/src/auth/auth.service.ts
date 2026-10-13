@@ -14,7 +14,6 @@ import { MetricsService } from '../observability/metrics.service.js';
 import type { SessionPayload } from './auth.types.js';
 import { hashPassword, verifyPassword } from './password.js';
 
-/** Compared against when the email is unknown, so both cases take the same time. */
 const DUMMY_HASH =
   'scrypt$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==';
 
@@ -31,7 +30,6 @@ export class AuthService implements OnApplicationBootstrap {
     private readonly metrics: MetricsService,
   ) {}
 
-  /** Runs after storage is initialised: makes sure the demo accounts exist. */
   async onApplicationBootstrap(): Promise<void> {
     const { adminEmail, adminPassword, seedDemoCustomer } = this.config.auth;
     await this.ensureUser(adminEmail, adminPassword, 'Administrator', 'admin');
@@ -61,7 +59,6 @@ export class AuthService implements OnApplicationBootstrap {
     const valid = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
     this.metrics.logins.inc({ result: user && valid ? 'success' : 'failure' });
     if (!user || !valid) {
-      // One message for both cases: do not reveal which emails are registered.
       throw new UnauthorizedException({
         code: 'INVALID_CREDENTIALS',
         message: 'Invalid email or password.',
@@ -75,7 +72,6 @@ export class AuthService implements OnApplicationBootstrap {
     return this.jwt.signAsync(payload);
   }
 
-  /** Returns the user of a valid, unexpired token, or `null`. Never throws. */
   async verifyToken(token: string): Promise<User | null> {
     try {
       const payload = await this.jwt.verifyAsync<SessionPayload>(token);

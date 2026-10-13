@@ -22,7 +22,6 @@ const IDEMPOTENCY_KEY = /^[A-Za-z0-9_-]{8,128}$/;
 export class OrdersController {
   constructor(private readonly orders: OrdersService) {}
 
-  /** Requires a session (global AuthGuard); customers get only their own orders. */
   @Get()
   list(
     @CurrentUser() user: User,

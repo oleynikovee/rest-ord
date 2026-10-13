@@ -84,7 +84,6 @@ export class MenuPage {
   protected readonly search = signal('');
   protected readonly categoryId = signal<string | null>(null);
 
-  /** Headers and items flattened into one list of equal-height rows for virtual scrolling. */
   protected readonly rows = computed<Row[]>(() => {
     const query = this.search().trim().toLowerCase();
     const categoryId = this.categoryId();
@@ -138,7 +137,6 @@ export class MenuPage {
       });
   }
 
-  /** Regular items have exactly one cart line, keyed by item id. */
   protected setQuantity(item: MenuItem, quantity: number): void {
     const line = this.cartLines().find((l) => l.itemId === item.id && !l.openPrice);
     if (line) this.store.dispatch(CartActions.setQuantity({ lineId: line.lineId, quantity }));

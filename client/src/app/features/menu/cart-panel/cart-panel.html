@@ -128,7 +128,6 @@
         Checkout · {{ _total | money }}
       </button>
     } @else {
-      <!-- The cart is kept in localStorage, so nothing is lost while signing in. -->
       <a mat-flat-button
           routerLink="/login"
           [queryParams]="{ returnUrl: '/menu' }">Sign in to order</a>

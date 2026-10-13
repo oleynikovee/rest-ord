@@ -102,7 +102,6 @@ describe('Promo codes (e2e)', () => {
     await order(customer, 'once-key-1', 'ONCE').expect(201);
     const second = await order(customer, 'once-key-2', 'ONCE').expect(422);
     expect(second.body).toMatchObject({ code: 'PROMO_ALREADY_USED' });
-    // A retry of the first order is not a second use.
     await order(customer, 'once-key-1', 'ONCE').expect(200);
   });
 

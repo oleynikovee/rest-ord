@@ -78,7 +78,6 @@ export class PromoService implements OnApplicationBootstrap {
     const result = await this.promos
       .update(id, this.validated(input), expectedVersion)
       .catch((error: { code?: string }) => {
-        // Unique violation: renamed to a code that already exists.
         if (error.code === '23505') throw codeTaken();
         throw error;
       });
@@ -96,7 +95,6 @@ export class PromoService implements OnApplicationBootstrap {
     }
   }
 
-  /** Can this customer use the code on this subtotal, and for how much? (422 if not.) */
   async quote(
     user: User,
     code: string,

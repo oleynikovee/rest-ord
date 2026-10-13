@@ -16,7 +16,6 @@ class EventsQueryDto {
 export class EventsController {
   constructor(private readonly events: EventsService) {}
 
-  /** Public: anonymous visitors get menu events, signed-in users also their order events. */
   @Get()
   @Public()
   page(

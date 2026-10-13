@@ -50,7 +50,6 @@ export class PgOrdersRepository extends OrdersRepository {
   }
 
   async list({ limit, userId, before }: OrdersListQuery): Promise<Order[]> {
-    // Keyset pagination on the unique, monotonic order number: stable while new orders arrive.
     const { rows } = await this.db.pool.query<OrderRow>(
       `SELECT * FROM orders
        WHERE ($2::uuid IS NULL OR user_id = $2::uuid)
@@ -85,8 +84,6 @@ export class PgOrdersRepository extends OrdersRepository {
     const client = await this.db.pool.connect();
     try {
       await client.query('BEGIN');
-      // The unique constraint is the last line of defence against double orders,
-      // even if the Redis lock was lost.
       const inserted = await client.query<OrderRow>(
         `INSERT INTO orders
            (id, idempotency_key, user_id, customer_name, lines, subtotal, discount, total, promo_code, status)
@@ -133,10 +130,6 @@ export class PgOrdersRepository extends OrdersRepository {
     }
   }
 
-  /**
-   * `FOR UPDATE` serialises concurrent orders with the same code, so the limits
-   * checked here cannot be exceeded by a race.
-   */
   private async redeem(
     client: PoolClient,
     { promoId, userId }: PromoRedemption,
@@ -161,7 +154,6 @@ export class PgOrdersRepository extends OrdersRepository {
   }
 
   async advanceStale(olderThanMs: number): Promise<Order[]> {
-    // One atomic UPDATE (safe from several instances at once), logged in the same transaction.
     return this.db.transaction(async (client) => {
       const { rows } = await client.query<OrderRow>(
         `UPDATE orders

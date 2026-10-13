@@ -1,4 +1,2 @@
-# Angular templates and decorators follow the project style guide
-# (first attribute on the tag line, arrays on separate lines), which Prettier would undo.
 src/app/**/*.html
 src/app/**/*.ts

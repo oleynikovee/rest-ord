@@ -10,7 +10,6 @@ import { APP_CONFIG, type AppConfig } from '../config.js';
 import { EventLog } from '../domain/ports.js';
 import { MetricsService } from './metrics.service.js';
 
-/** `/metrics` on an internal port that only Prometheus (backend network) can reach. */
 @Injectable()
 export class MetricsServer implements OnApplicationBootstrap, OnApplicationShutdown {
   private readonly logger = new Logger(MetricsServer.name);
@@ -43,7 +42,6 @@ export class MetricsServer implements OnApplicationBootstrap, OnApplicationShutd
   }
 
   private async render(): Promise<string> {
-    // Outbox health is read at scrape time, so it is fresh and costs nothing in between.
     const { pending, oldestAgeSeconds } = await this.log.pendingStats();
     this.metrics.outboxPending.set(pending);
     this.metrics.outboxOldestPendingAge.set(oldestAgeSeconds);

@@ -4,7 +4,6 @@ import { SwUpdate, type VersionReadyEvent } from '@angular/service-worker';
 import { filter } from 'rxjs';
 import { NotifyService } from './notify.service';
 
-/** Tells the user when a new version was downloaded in the background. */
 @Injectable({ providedIn: 'root' })
 export class AppUpdates {
   private readonly updates = inject(SwUpdate);

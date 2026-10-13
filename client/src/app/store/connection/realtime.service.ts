@@ -8,11 +8,6 @@ export type RealtimeEvent =
   | { kind: 'disconnected' }
   | { kind: 'event'; envelope: EventEnvelope };
 
-/**
- * Thin wrapper around Socket.IO. Reconnection with exponential backoff and
- * the long-polling fallback come from the library. The client library is
- * loaded lazily so it does not delay the first render.
- */
 @Injectable({ providedIn: 'root' })
 export class RealtimeService implements OnDestroy {
   private socket?: Socket;
@@ -23,8 +18,6 @@ export class RealtimeService implements OnDestroy {
         new Observable<RealtimeEvent>((subscriber) => {
           const socket = io({
             path: '/socket.io',
-            // WebSocket first: one connection, so any API replica can serve it. Long-polling
-            // stays as a fallback for networks that block WebSockets (sticky cookie at the edge).
             transports: ['websocket', 'polling'],
             tryAllTransports: true,
             reconnectionDelay: 1000,
@@ -53,7 +46,6 @@ export class RealtimeService implements OnDestroy {
     share(),
   );
 
-  /** Re-handshakes so the server re-reads the session cookie and updates the socket's rooms. */
   reconnect(): void {
     if (!this.socket) return;
     this.socket.disconnect();

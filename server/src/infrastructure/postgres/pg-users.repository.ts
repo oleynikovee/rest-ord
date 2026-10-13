@@ -37,7 +37,6 @@ export class PgUsersRepository extends UsersRepository {
   }
 
   async create(input: Omit<UserRecord, 'id'>): Promise<UserRecord | null> {
-    // The unique constraint makes concurrent registrations of one email safe.
     const { rows } = await this.db.pool.query<UserRow>(
       `INSERT INTO users (id, email, name, role, password_hash)
        VALUES ($1, $2, $3, $4, $5)

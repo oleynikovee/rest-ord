@@ -30,7 +30,6 @@ function toInput(promo: PromoCode): PromoCodeInput {
   };
 }
 
-/** Admin-only page; promo codes are not shared state of the ordering flow, so a signal store is enough here. */
 @Component({
   selector: 'app-promos-page',
   templateUrl: './promos-page.html',
@@ -105,7 +104,6 @@ export class PromosPage {
       error: (error: unknown) => {
         const apiError = toApiError(error);
         this.notify.error(apiError.message);
-        // Version conflict: show the current state instead of the stale copy.
         const current = apiError.current;
         if (current && 'code' in current) this.upsert(current);
         else if (previous) this.upsert(previous);

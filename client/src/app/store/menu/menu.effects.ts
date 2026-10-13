@@ -22,10 +22,6 @@ export const loadMenu = createEffect(
   { functional: true },
 );
 
-/**
- * Successful responses are applied right away (not only via WebSocket), so the
- * admin sees the result even while the live connection is down.
- */
 export const setupRequests = createEffect(
   (actions$ = inject(Actions), api = inject(ApiService)) =>
     actions$.pipe(
@@ -71,11 +67,6 @@ export const setupRequests = createEffect(
   { functional: true },
 );
 
-/**
- * Edits of one item are sent one after another (concatMap per item), each with the
- * version the server returned for the previous one: quick repeated toggles by the same
- * admin must not conflict with each other. Different items still go in parallel.
- */
 export const updateItem = createEffect(
   (actions$ = inject(Actions), api = inject(ApiService), store = inject(Store)) =>
     actions$.pipe(
@@ -101,7 +92,6 @@ export const updateItem = createEffect(
   { functional: true },
 );
 
-/** A refused write that carries the current state (412) brings the local copy up to date. */
 export const applyConflictState = createEffect(
   (actions$ = inject(Actions)) =>
     actions$.pipe(

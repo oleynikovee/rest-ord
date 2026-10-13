@@ -6,14 +6,9 @@ import { type CartLine, MAX_QUANTITY, lineIdFor, lineProblem } from './cart.mode
 
 export interface CartState {
   lines: CartLine[];
-  /** Applied promo code; the discount is recomputed from its rule as the cart changes. */
   promo: PromoQuote | null;
   promoPending: boolean;
   promoError: ApiError | null;
-  /**
-   * Idempotency key of the current checkout attempt. It survives retries and page
-   * reloads, and is reset whenever the cart content changes.
-   */
   checkoutKey: string | null;
   submitting: boolean;
   error: ApiError | null;
@@ -49,7 +44,6 @@ export function loadPersistedCart(): CartState {
 
 const clamp = (quantity: number): number => Math.max(0, Math.min(MAX_QUANTITY, Math.floor(quantity)));
 
-/** Any edit invalidates the pending checkout key: a different cart is a different order. */
 const edited = (state: CartState, lines: CartLine[]): CartState => ({
   ...state,
   lines,
@@ -118,7 +112,6 @@ export const createCartReducer = (initialState: CartState): ActionReducer<CartSt
             case 'price_changed':
               return [{ ...line, name: item.name, unitPrice: item.price ?? 0 }];
             case 'open_price_changed':
-              // A former open-price item now has a fixed price; the reverse needs user input.
               return item.openPrice
                 ? []
                 : [{ ...line, lineId: item.id, openPrice: false, unitPrice: item.price ?? 0 }];
@@ -140,7 +133,6 @@ export const createCartReducer = (initialState: CartState): ActionReducer<CartSt
       ...state,
       submitting: false,
       error,
-      // The code can no longer be used (expired, used up...): drop it and say why.
       ...(error.code.startsWith('PROMO_') ? { promo: null, promoError: error } : {}),
     })),
   );

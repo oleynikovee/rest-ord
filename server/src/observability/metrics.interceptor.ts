@@ -3,7 +3,6 @@ import type { Request, Response } from 'express';
 import { type Observable, finalize } from 'rxjs';
 import { MetricsService } from './metrics.service.js';
 
-/** Records duration per route template (`/api/items/:id`, not the concrete id: bounded labels). */
 @Injectable()
 export class MetricsInterceptor implements NestInterceptor {
   constructor(private readonly metrics: MetricsService) {}

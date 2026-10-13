@@ -9,7 +9,6 @@ function deriveKey(password: string, salt: Buffer): Promise<Buffer> {
   );
 }
 
-/** scrypt from node:crypto: memory-hard and needs no native add-on. Format: `scrypt$salt$hash`. */
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(SALT_LENGTH);
   const key = await deriveKey(password, salt);

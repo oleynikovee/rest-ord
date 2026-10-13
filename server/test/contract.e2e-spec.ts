@@ -1,8 +1,3 @@
-/**
- * Provider contract tests: the running API must match the published contract.
- * 1. Every route the server exposes is documented in the OpenAPI document, and vice versa.
- * 2. Real responses (success and error) validate against the documented schemas.
- */
 import type { INestApplication } from '@nestjs/common';
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants.js';
 import { RequestMethod } from '@nestjs/common';
@@ -20,7 +15,6 @@ const schema = (id: string): z.ZodType => {
   return found;
 };
 
-/** Validates and returns a readable error instead of a huge zod dump. */
 function conforms(id: string, body: unknown): void {
   const result = schema(id).safeParse(body);
   if (!result.success) {

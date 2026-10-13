@@ -12,7 +12,6 @@ import { authFeature } from '../../../store/auth/auth.reducer';
 
 type Mode = 'login' | 'register';
 
-/** Only same-app paths are allowed as a return URL (no open redirects). */
 function safeReturnUrl(url: string | undefined): string {
   return url && url.startsWith('/') && !url.startsWith('//') ? url : '/menu';
 }
@@ -34,7 +33,6 @@ function safeReturnUrl(url: string | undefined): string {
 export class LoginPage {
   private readonly store = inject(Store);
 
-  /** Bound from the `returnUrl` query parameter. */
   readonly returnUrl = input<string>();
 
   protected readonly mode = signal<Mode>('login');

@@ -4,11 +4,6 @@ import { trace } from '@opentelemetry/api';
 import type { Params } from 'nestjs-pino';
 import type { User } from '../domain/models.js';
 
-/**
- * Structured JSON logs (pino): one line per request with a request id (taken from
- * `X-Request-Id` or generated, echoed back), the user id, and the trace id so a log
- * line can be opened in the tracing UI. Secrets are redacted.
- */
 export function loggingParams(env: NodeJS.ProcessEnv = process.env): Params {
   const level = env.LOG_LEVEL ?? (env.NODE_ENV === 'test' ? 'silent' : 'info');
   return {

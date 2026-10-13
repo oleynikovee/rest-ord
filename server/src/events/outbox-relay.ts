@@ -9,18 +9,11 @@ import { EventBus, EventLog } from '../domain/ports.js';
 import { MetricsService } from '../observability/metrics.service.js';
 
 const BATCH_SIZE = 100;
-/** Fallback when a notification is missed; LISTEN/NOTIFY normally wakes the relay at once. */
 const POLL_MS = 1000;
 const LEADERSHIP_RETRY_MS = 3000;
 const RETENTION_MS = 24 * 60 * 60 * 1000;
 const PRUNE_EVERY_MS = 10 * 60 * 1000;
 
-/**
- * Moves committed events from the outbox to the bus (Redis Pub/Sub). Exactly one
- * instance publishes at a time (leader lock), so subscribers get events in `seq` order.
- * Delivery is at-least-once: a crash after publishing but before marking may resend a
- * batch, which clients ignore thanks to `seq` and entity versions.
- */
 @Injectable()
 export class OutboxRelay implements OnApplicationBootstrap, OnApplicationShutdown {
   private readonly logger = new Logger(OutboxRelay.name);
@@ -46,7 +39,6 @@ export class OutboxRelay implements OnApplicationBootstrap, OnApplicationShutdow
     this.unsubscribe?.();
   }
 
-  /** Drains until the outbox is empty; concurrent wake-ups are coalesced. */
   async drain(): Promise<void> {
     if (this.draining) {
       this.again = true;
@@ -56,9 +48,10 @@ export class OutboxRelay implements OnApplicationBootstrap, OnApplicationShutdow
     try {
       do {
         this.again = false;
-        while ((await this.log.publishPending((event) => this.publish(event), BATCH_SIZE)) > 0) {
-          // keep going while full batches come back
-        }
+        let published: number;
+        do {
+          published = await this.log.publishPending((event) => this.publish(event), BATCH_SIZE);
+        } while (published > 0);
       } while (this.again && !this.stopped);
     } catch (error) {
       this.logger.warn(`Outbox publish failed, will retry: ${(error as Error).message}`);

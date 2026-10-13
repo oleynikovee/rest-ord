@@ -1,7 +1,3 @@
-# Optional observability stack, on top of the base file:
-#   docker compose -f docker-compose.yml -f docker-compose.observability.yml up --build
-# Grafana http://localhost:3001 · Prometheus http://localhost:9090
-# Alertmanager http://localhost:9093 · Jaeger http://localhost:16686
 services:
   app:
     environment:

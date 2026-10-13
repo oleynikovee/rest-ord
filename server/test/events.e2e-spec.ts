@@ -50,7 +50,6 @@ describe('Event log: outbox and replay (e2e)', () => {
     expect(page.events[0]).toMatchObject({ seq: snapshot.seq + 1, event: { type: 'item.upserted', item: { price: 4242 } } });
     expect(page.nextAfter).toBe(snapshot.seq + 2);
 
-    // A new snapshot already includes the change.
     const later = (await request(app.getHttpServer()).get('/api/menu')).body as MenuSnapshot;
     expect(later.seq).toBe(snapshot.seq + 2);
     expect(later.items.find((i) => i.id === item.id)?.price).toBe(4242);
@@ -92,7 +91,7 @@ describe('Event log: outbox and replay (e2e)', () => {
     await admin.patch(`/api/items/${item.id}`).set('If-Match', `"${item.version}"`).send({ price: 5 }).expect(200);
     const log = app.get(EventLog);
     await app.get(OutboxRelay).drain();
-    await log.prune(-1); // everything published is "old"
+    await log.prune(-1);
     const page = await replay(admin, 0);
     expect(page).toMatchObject({ reset: true, events: [] });
   });

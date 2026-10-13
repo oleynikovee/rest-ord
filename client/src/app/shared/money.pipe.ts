@@ -6,7 +6,6 @@ export function formatMoney(cents: number | null | undefined): string {
   return cents === null || cents === undefined ? '' : formatter.format(cents / 100);
 }
 
-/** Formats integer cents as currency. */
 @Pipe({
   name: 'money',
 })

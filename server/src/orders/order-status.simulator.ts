@@ -8,10 +8,6 @@ import {
 import { APP_CONFIG, type AppConfig } from '../config.js';
 import { OrdersRepository } from '../domain/ports.js';
 
-/**
- * Stands in for the kitchen: periodically moves every unfinished order one
- * status forward so the Orders page has real-time updates to show.
- */
 @Injectable()
 export class OrderStatusSimulator
   implements OnApplicationBootstrap, OnApplicationShutdown
@@ -39,7 +35,6 @@ export class OrderStatusSimulator
     if (this.running) return;
     this.running = true;
     try {
-      // The repository logs each status change in the same transaction (outbox).
       await this.repository.advanceStale(this.config.statusStepMs);
     } catch (error) {
       this.logger.warn(`Status update failed: ${(error as Error).message}`);

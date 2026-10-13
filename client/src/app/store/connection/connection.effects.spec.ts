@@ -55,7 +55,6 @@ describe('replayMissedEvents', () => {
     expect(api.getEvents.mock.calls.map((c) => c[0])).toEqual([10, 11]);
     expect(actions).toContainEqual(MenuLiveActions.itemUpserted({ item }));
     expect(actions).toContainEqual(MenuLiveActions.itemDeleted({ id: 'x' }));
-    // Even events this user may not see move the position forward.
     expect(actions.at(-1)).toEqual(ConnectionActions.seqAdvanced({ seq: 14 }));
     expect(actions).not.toContainEqual(MenuActions.load());
   });

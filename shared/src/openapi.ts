@@ -1,11 +1,6 @@
-/**
- * OpenAPI 3.1 document generated from the zod schemas, so the published contract
- * cannot drift from the types the server and client compile against.
- */
 import { z } from 'zod';
 import * as schemas from './schemas.js';
 
-/** Every named schema, by its OpenAPI component name (used by contract tests). */
 export const SCHEMAS_BY_ID: Record<string, z.ZodType> = Object.fromEntries(
   (Object.values(schemas) as unknown[])
     .filter((schema): schema is z.ZodType => schema instanceof z.ZodType)
@@ -19,7 +14,6 @@ type Method = 'get' | 'post' | 'patch' | 'delete';
 
 interface Operation {
   summary: string;
-  /** `public`: no session; `user`: any signed-in user; `admin`: admins only. */
   access: 'public' | 'user' | 'admin';
   body?: string;
   query?: Record<string, { schema: object; required?: boolean; description: string }>;
@@ -155,7 +149,6 @@ export function buildOpenApiDocument(): Record<string, unknown> {
     uri: (id) => `#/components/schemas/${id}`,
     unrepresentable: 'any',
   }) as { schemas: Record<string, Record<string, unknown>> };
-  // Drop per-schema `$id`/`$schema` noise; references use the components path.
   for (const schema of Object.values(components)) {
     delete schema['$id'];
     delete schema['$schema'];

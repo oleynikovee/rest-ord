@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto';
 import type { Category, MenuItem } from '../domain/models.js';
 import type { MenuData } from '../domain/ports.js';
 
-/** Deterministic UUID-shaped id so the seed is stable between restarts. */
 function stableId(seed: string): string {
   const hex = createHash('sha1').update(seed).digest('hex');
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
@@ -35,7 +34,6 @@ const OPEN_PRICE_ITEMS: Record<string, string> = {
   Drinks: 'Wine by the Bottle',
 };
 
-/** ~1000 items across 12 categories: big enough to exercise virtual scrolling. */
 export function generateSeedMenu(): MenuData {
   const categories: Category[] = [];
   const items: MenuItem[] = [];
@@ -62,7 +60,7 @@ export function generateSeedMenu(): MenuData {
     for (const dish of dishes) {
       for (const variant of VARIANTS) {
         n++;
-        const base = 300 + ((n * 7919) % 2700); // 3.00 .. 29.99
+        const base = 300 + ((n * 7919) % 2700);
         items.push({
           id: stableId(`item:${categoryName}:${dish}:${variant}`),
           categoryId,

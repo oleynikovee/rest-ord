@@ -22,7 +22,6 @@ export class AppModule {
     return {
       module: AppModule,
       imports: [
-        // Reports unexpected errors when SENTRY_DSN is set (no-op otherwise).
         SentryModule.forRoot(),
         LoggerModule.forRoot(loggingParams()),
         InfrastructureModule.forRoot(config),
@@ -51,7 +50,6 @@ export class AppModule {
       providers: [
         RealtimeGateway,
         { provide: APP_GUARD, useClass: ThrottlerGuard },
-        // 5xx only: HttpExceptions (4xx) are expected outcomes, not errors to report.
         { provide: APP_FILTER, useClass: SentryGlobalFilter },
       ],
     };

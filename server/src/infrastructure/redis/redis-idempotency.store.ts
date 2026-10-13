@@ -8,10 +8,6 @@ const TTL_SECONDS = 24 * 60 * 60;
 const PENDING = '__pending__';
 const keyOf = (key: string): string => `idempotency:order:${key}`;
 
-/**
- * `SET NX` gives an atomic lock across all API instances: only the first request
- * with a given key proceeds, duplicates either wait-and-retry or get the stored result.
- */
 export class RedisIdempotencyStore extends IdempotencyStore {
   constructor(private readonly redis: Redis) {
     super();
@@ -22,7 +18,7 @@ export class RedisIdempotencyStore extends IdempotencyStore {
     if (ok === 'OK') return { kind: 'acquired' };
 
     const value = await this.redis.get(keyOf(key));
-    if (value === null) return this.acquire(key); // expired in between
+    if (value === null) return this.acquire(key);
     return value === PENDING
       ? { kind: 'in_progress' }
       : { kind: 'completed', orderId: value };

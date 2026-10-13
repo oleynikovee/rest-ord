@@ -4,7 +4,6 @@ import { MenuLiveActions } from '../menu/menu.actions';
 import { OrdersActions } from '../orders/orders.actions';
 import { ConnectionActions } from './connection.actions';
 
-/** Same handling for live (socket) and replayed (HTTP) events. */
 export function envelopeToActions(envelope: EventEnvelope): Action[] {
   return [toAction(envelope), ConnectionActions.seqAdvanced({ seq: envelope.seq })];
 }

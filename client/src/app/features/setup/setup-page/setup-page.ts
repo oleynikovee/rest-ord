@@ -54,7 +54,6 @@ export class SetupPage {
   private readonly selectedId = signal<string | null>(null);
   protected readonly search = signal('');
 
-  /** Falls back to the first category, also when the selected one is deleted elsewhere. */
   protected readonly selected = computed(() => {
     const categories = this.categories();
     return categories.find((c) => c.id === this.selectedId()) ?? categories[0] ?? null;
@@ -124,7 +123,6 @@ export class SetupPage {
 
   protected setOpenPrice(item: MenuItem, openPrice: boolean): void {
     if (!openPrice && item.price === null) {
-      // A fixed-price item needs a price first.
       this.editItem(item, { openPrice: false });
       return;
     }

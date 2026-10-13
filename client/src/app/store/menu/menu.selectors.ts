@@ -15,7 +15,6 @@ export const selectItemEntities = createSelector(
 );
 export const selectAllItems = createSelector(menuFeature.selectItems, itemSelectors.selectAll);
 
-/** Items grouped by category in menu order, each group sorted by name. */
 export const selectMenuSections = createSelector(
   selectCategories,
   selectAllItems,

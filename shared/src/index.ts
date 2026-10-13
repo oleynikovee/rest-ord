@@ -1,7 +1,3 @@
-/**
- * Runtime-free entry point: constants and types only, so the client bundle does
- * not include zod. Schemas live in `@trattoria/contracts/schemas`.
- */
 import type { z } from 'zod';
 import type {
   ApiErrorBodySchema,
@@ -33,7 +29,6 @@ import { MENU_CHANGE_KINDS, ORDER_STATUSES, PROMO_KINDS, ROLES } from './constan
 
 export * from './constants.js';
 
-/** Integer minor units: 1999 means 19.99. */
 export type Cents = number;
 
 export type Category = z.infer<typeof CategorySchema>;
@@ -69,10 +64,6 @@ export function nextStatus(status: OrderStatus): OrderStatus | null {
   return ORDER_STATUSES[ORDER_STATUSES.indexOf(status) + 1] ?? null;
 }
 
-/**
- * The discount a promo rule gives for a subtotal (cents). Shared so the cart shows
- * exactly what the server will charge; returns 0 below the minimum order amount.
- */
 export function computeDiscount(rule: PromoRule, subtotal: Cents): Cents {
   if (subtotal < rule.minOrderAmount) return 0;
   const raw = rule.kind === 'FIXED' ? rule.value : Math.floor((subtotal * rule.value) / 100);
@@ -80,7 +71,6 @@ export function computeDiscount(rule: PromoRule, subtotal: Cents): Cents {
   return Math.max(0, Math.min(capped, subtotal));
 }
 
-/** Promo codes are case-insensitive: they are stored and compared upper-cased. */
 export function normalizePromoCode(code: string): string {
   return code.trim().toUpperCase();
 }

@@ -21,7 +21,6 @@ import type {
 
 @Injectable()
 export class MenuService {
-  /** Events are written by the repository together with each change (transactional outbox). */
   constructor(
     private readonly menu: MenuRepository,
     private readonly metrics: MetricsService,
@@ -105,7 +104,6 @@ export class MenuService {
     this.unwrap(await this.menu.deleteItem(id, expectedVersion), itemNotFound);
   }
 
-  /** Fails fast before validation; the repository repeats the check atomically on write. */
   private checkVersion<T extends Category | MenuItem>(
     current: T | null,
     expectedVersion: number,
@@ -161,7 +159,6 @@ const categoryNotFound = (): NotFoundException =>
 const itemNotFound = (): NotFoundException =>
   new NotFoundException({ code: 'ITEM_NOT_FOUND', message: 'Menu item not found.' });
 
-/** 412: the client's copy is outdated. The current state lets it show what changed. */
 const versionConflict = (current: Category | MenuItem): PreconditionFailedException =>
   new PreconditionFailedException({
     code: 'VERSION_CONFLICT',

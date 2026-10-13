@@ -58,7 +58,6 @@ export const logout = createEffect(
       exhaustMap(() =>
         api.logout().pipe(
           map(() => AuthActions.logoutSuccess()),
-          // Even if the request failed, forget the session locally.
           catchError(() => of(AuthActions.logoutSuccess())),
         ),
       ),
@@ -91,7 +90,6 @@ export const redirectOnSessionExpired = createEffect(
   { functional: true, dispatch: false },
 );
 
-/** The socket joins its rooms on connect, so it reconnects whenever the session changes. */
 export const reconnectRealtime = createEffect(
   (actions$ = inject(Actions), realtime = inject(RealtimeService)) =>
     actions$.pipe(

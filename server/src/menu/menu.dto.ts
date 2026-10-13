@@ -11,7 +11,7 @@ import {
   Min,
 } from 'class-validator';
 
-export const MAX_PRICE = 1_000_000; // 10 000.00
+export const MAX_PRICE = 1_000_000;
 
 const trim = ({ value }: { value: unknown }): unknown =>
   typeof value === 'string' ? value.trim() : value;
@@ -56,7 +56,6 @@ export class MenuItemDto {
   @MaxLength(300)
   description?: string;
 
-  /** Cents. May be null for open-price items. */
   @IsOptional()
   @IsInt()
   @Min(0)
@@ -72,7 +71,6 @@ export class MenuItemDto {
   openPrice?: boolean;
 }
 
-/** Partial update: only the sent fields change (e.g. a single availability toggle). */
 export class UpdateMenuItemDto {
   @IsOptional()
   @IsUUID()

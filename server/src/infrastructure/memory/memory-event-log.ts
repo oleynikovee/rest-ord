@@ -7,7 +7,6 @@ interface Entry {
   at: number;
 }
 
-/** In-process event log. Appends happen synchronously next to the in-memory write. */
 export class MemoryEventLog extends EventLog {
   private readonly entries: Entry[] = [];
   private readonly listeners = new Set<() => void>();
@@ -19,7 +18,6 @@ export class MemoryEventLog extends EventLog {
     queueMicrotask(() => this.listeners.forEach((listener) => listener()));
   }
 
-  /** Synchronous, for snapshots taken in the same tick as the read. */
   currentSeq(): number {
     return this.seq;
   }

@@ -12,7 +12,6 @@ describe('Menu management with optimistic locking (e2e)', () => {
 
   beforeEach(async () => {
     app = await createTestApp();
-    // Two admins editing at the same time.
     alice = await signIn(app, ADMIN.email, ADMIN.password);
     bob = await signIn(app, ADMIN.email, ADMIN.password);
     item = ((await alice.get('/api/menu').expect(200)).body as MenuSnapshot).items[0];
@@ -46,7 +45,6 @@ describe('Menu management with optimistic locking (e2e)', () => {
       current: { id: item.id, price: 1111, version: item.version + 1 },
     });
 
-    // Bob retries on top of the latest version.
     await bob
       .patch(`/api/items/${item.id}`)
       .set('If-Match', `W/"${item.version + 1}"`)

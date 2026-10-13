@@ -17,15 +17,6 @@ import { MetricsService } from '../observability/metrics.service.js';
 const ADMINS_ROOM = 'role:admin';
 const userRoom = (userId: string): string => `user:${userId}`;
 
-/**
- * Pushes domain events to browsers. Socket.IO is used for its built-in
- * reconnection, heartbeats and long-polling fallback on hostile networks.
- *
- * The menu is public and goes to everyone. Order events go only to the order's
- * owner and to admins: the session cookie is verified on the handshake and the
- * socket joins its rooms. Same-origin only (no CORS), like the REST API.
- */
-// Heartbeats every 10 s: a dead connection is noticed within ~15 s (default: up to 45 s).
 @WebSocketGateway({ pingInterval: 10_000, pingTimeout: 5_000 })
 export class RealtimeGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect, OnApplicationShutdown
@@ -44,7 +35,6 @@ export class RealtimeGateway
 
   afterInit(): void {
     this.unsubscribe.push(
-      // Envelopes carry `seq`, so clients know where to resume after a reconnect.
       this.bus.subscribe<EventEnvelope>(TOPICS.menu, (envelope) =>
         this.server.emit(SOCKET_EVENTS.menu, envelope),
       ),

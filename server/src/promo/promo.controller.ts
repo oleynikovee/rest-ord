@@ -32,7 +32,6 @@ export class PromoController {
     return this.promos.update(id, dto, version);
   }
 
-  /** Any signed-in customer; rate-limited against guessing codes. */
   @Post('validate')
   @HttpCode(200)
   @Throttle({ default: { limit: 20, ttl: 60_000 } })

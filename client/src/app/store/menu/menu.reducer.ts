@@ -25,7 +25,6 @@ const initialState: MenuState = {
   error: null,
 };
 
-/** Real-time events may arrive out of order; never replace a newer version with an older one. */
 function isStale<T extends { id: string; version: number }>(
   state: EntityState<T>,
   incoming: T,
@@ -34,7 +33,6 @@ function isStale<T extends { id: string; version: number }>(
   return current !== undefined && current.version > incoming.version;
 }
 
-/** Snapshot replaces everything, except entities already updated past the snapshot by live events. */
 function mergeSnapshot<T extends { id: string; version: number }>(
   state: EntityState<T>,
   incoming: T[],
@@ -78,16 +76,13 @@ export const menuFeature = createFeature({
       items: itemAdapter.removeOne(id, state.items),
     })),
 
-    // Optimistic update: the UI reacts instantly, the server response (or rollback) follows.
     on(SetupActions.updateItem, (state, { previous, changes }) => ({
       ...state,
       items: itemAdapter.updateOne({ id: previous.id, changes }, state.items),
     })),
     on(SetupActions.updateItemFailure, (state, { previous, error }) => {
-      // Version conflict: show what the other admin saved instead of our stale copy.
       const latest = error.current && 'categoryId' in error.current ? error.current : previous;
       const current = state.items.entities[previous.id];
-      // Keep a newer server version if one already arrived.
       if (!current || current.version > latest.version) return state;
       return { ...state, items: itemAdapter.setOne(latest, state.items) };
     }),

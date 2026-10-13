@@ -28,7 +28,6 @@ export const PROMO_KINDS = [
   'PERCENT',
 ] as const;
 
-/** Why a promo code cannot be applied (HTTP 422 `code`). */
 export const PROMO_ERRORS = {
   notFound: 'PROMO_NOT_FOUND',
   inactive: 'PROMO_INACTIVE',
@@ -39,11 +38,9 @@ export const PROMO_ERRORS = {
   alreadyUsed: 'PROMO_ALREADY_USED',
 } as const;
 
-/** Header used to make order creation idempotent. */
 export const IDEMPOTENCY_HEADER = 'Idempotency-Key';
 export const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9_-]{8,128}$/;
 
-/** Topics of the event log (outbox). */
 export const TOPICS = {
   menu: 'menu.changes.v1',
   orders: 'order.lifecycle.v1',
@@ -51,7 +48,6 @@ export const TOPICS = {
 
 export const EVENTS_PAGE_SIZE = 500;
 
-/** Socket.IO event names. */
 export const SOCKET_EVENTS = {
   menu: 'menu',
   order: 'order',

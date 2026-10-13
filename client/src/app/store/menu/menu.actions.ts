@@ -11,7 +11,6 @@ export const MenuActions = createActionGroup({
   },
 });
 
-/** Changes pushed by the server (or echoed from our own successful requests). */
 export const MenuLiveActions = createActionGroup({
   source: 'Menu Live',
   events: {
@@ -29,7 +28,6 @@ export const SetupActions = createActionGroup({
     'Rename Category': props<{ category: Category; name: string }>(),
     'Delete Category': props<{ category: Category }>(),
     'Create Item': props<{ input: MenuItemInput }>(),
-    /** Applied optimistically; `previous` is restored if the server rejects it. */
     'Update Item': props<{ previous: MenuItem; changes: Partial<MenuItemInput> }>(),
     'Update Item Failure': props<{ previous: MenuItem; error: ApiError }>(),
     'Delete Item': props<{ item: MenuItem }>(),

@@ -1,10 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Counter, collectDefaultMetrics, Gauge, Histogram, Registry } from 'prom-client';
 
-/**
- * Prometheus metrics: process defaults, HTTP RED metrics and business counters.
- * Served on a separate internal port (see MetricsServer), never on the public API.
- */
 @Injectable()
 export class MetricsService {
   readonly registry = new Registry();

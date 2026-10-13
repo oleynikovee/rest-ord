@@ -45,7 +45,6 @@ CREATE TABLE IF NOT EXISTS users (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Added with authentication; nullable so databases created earlier keep working.
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES users(id);
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name text;
 CREATE INDEX IF NOT EXISTS orders_user_idx ON orders (user_id, number DESC);
@@ -79,7 +78,6 @@ CREATE INDEX IF NOT EXISTS promo_redemptions_user_idx ON promo_redemptions (prom
 
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS promo_code text;
 
--- Transactional outbox: events are written with the change they describe.
 CREATE TABLE IF NOT EXISTS outbox (
   seq bigserial PRIMARY KEY,
   topic text NOT NULL,
@@ -90,7 +88,6 @@ CREATE TABLE IF NOT EXISTS outbox (
 CREATE INDEX IF NOT EXISTS outbox_pending_idx ON outbox (seq) WHERE published_at IS NULL;
 `;
 
-/** Arbitrary constant for pg_advisory_lock so concurrent instances migrate one at a time. */
 const MIGRATION_LOCK_ID = 42_001;
 
 export class PgDatabase {
@@ -99,13 +96,11 @@ export class PgDatabase {
 
   constructor(connectionString: string) {
     this.pool = new pg.Pool({ connectionString, max: 10 });
-    // An idle client losing its connection must not crash the process.
     this.pool.on('error', (error) =>
       this.logger.error(`Idle client error: ${error.message}`),
     );
   }
 
-  /** Waits for the database (it may still be starting in Docker) and applies the schema. */
   async init(attempts = 15): Promise<void> {
     for (let attempt = 1; ; attempt++) {
       try {
@@ -129,7 +124,6 @@ export class PgDatabase {
     }
   }
 
-  /** Runs `work` in a transaction on one connection; rolls back if it throws. */
   async transaction<T>(work: (client: pg.PoolClient) => Promise<T>): Promise<T> {
     const client = await this.pool.connect();
     try {

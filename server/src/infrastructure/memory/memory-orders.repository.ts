@@ -47,7 +47,6 @@ export class MemoryOrdersRepository extends OrdersRepository {
     idempotencyKey: string,
     redemption?: PromoRedemption,
   ): Promise<CreateOrderResult> {
-    // No await until the order is stored: the whole check-and-write is atomic in one process.
     const existingId = this.byKey.get(idempotencyKey);
     if (existingId) return { status: 'duplicate', order: clone(this.orders.get(existingId)!) };
     if (redemption) {

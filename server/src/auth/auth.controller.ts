@@ -16,7 +16,6 @@ export class AuthController {
     @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
-  /** Anonymous visitors get `{ user: null }` instead of a 401, so the app can start quietly. */
   @Get('me')
   me(@CurrentUser() user: User | undefined): { user: User | null } {
     return { user: user ?? null };
@@ -68,15 +67,10 @@ export class AuthController {
     });
   }
 
-  /**
-   * httpOnly: scripts cannot read the token (XSS). SameSite=Strict: the browser does not
-   * send it with cross-site requests, which protects the cookie-authenticated API from CSRF.
-   */
   private cookieOptions(req: Request): CookieOptions {
     return {
       httpOnly: true,
       sameSite: 'strict',
-      // Over HTTPS (directly or via the trusted proxy) the cookie is never sent in clear text.
       secure: this.config.auth.cookieSecure || req.secure,
       path: '/',
     };
