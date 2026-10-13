@@ -1,6 +1,13 @@
 # syntax=docker/dockerfile:1
 
+FROM node:24-alpine AS shared
+WORKDIR /build/shared
+COPY shared/package.json shared/package-lock.json shared/tsconfig.json ./
+COPY shared/src ./src
+RUN npm ci --no-audit --no-fund
+
 FROM node:24-alpine AS client
+COPY --from=shared /build/shared /build/shared
 WORKDIR /build/client
 COPY client/package.json client/package-lock.json ./
 RUN npm ci --no-audit --no-fund
@@ -8,6 +15,7 @@ COPY client/ ./
 RUN npm run build
 
 FROM node:24-alpine AS server
+COPY --from=shared /build/shared /build/shared
 WORKDIR /build/server
 COPY server/package.json server/package-lock.json ./
 RUN npm ci --no-audit --no-fund
@@ -19,6 +27,7 @@ ENV NODE_ENV=production \
     PORT=3000 \
     CLIENT_DIST=/app/public
 WORKDIR /app
+COPY --from=shared /build/shared /shared
 COPY --from=server /build/server/package.json ./
 COPY --from=server /build/server/node_modules ./node_modules
 COPY --from=server /build/server/dist ./dist

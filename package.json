@@ -3,9 +3,9 @@
   "private": true,
   "description": "Real-time restaurant ordering prototype: Angular client + NestJS server",
   "scripts": {
-    "postinstall": "npm --prefix server ci --no-audit --no-fund && npm --prefix client ci --no-audit --no-fund",
+    "postinstall": "npm --prefix shared ci --no-audit --no-fund && npm --prefix server ci --no-audit --no-fund && npm --prefix client ci --no-audit --no-fund",
     "start": "concurrently -k -n server,client -c blue,magenta \"npm --prefix server run start:dev\" \"npm --prefix client start\"",
-    "build": "npm --prefix server run build && npm --prefix client run build",
+    "build": "npm --prefix shared run build && npm --prefix server run build && npm --prefix client run build",
     "test": "npm --prefix server test && npm --prefix server run test:e2e && npm --prefix client test -- --watch=false",
     "lint": "npm --prefix server run lint && npm --prefix client run lint",
     "check": "npm run lint && npm test && npm run build",

@@ -15,6 +15,8 @@ export const menuItem = (patch: Partial<MenuItem> = {}): MenuItem => ({
 export const order = (patch: Partial<Order> = {}): Order => ({
   id: 'o1',
   number: 1,
+  userId: 'u1',
+  customerName: 'Demo guest',
   lines: [],
   subtotal: 1000,
   discount: 0,
