@@ -15,7 +15,13 @@ export interface PromptData {
 @Component({
   selector: 'app-prompt-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule],
+  imports: [
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+  ],
   template: `
     <h2 mat-dialog-title>{{ data.title }}</h2>
     <form (ngSubmit)="submit()">
@@ -30,11 +36,18 @@ export interface PromptData {
       </mat-dialog-content>
       <mat-dialog-actions align="end">
         <button mat-button type="button" mat-dialog-close>Cancel</button>
-        <button mat-flat-button type="submit" [disabled]="control.invalid">{{ data.confirm }}</button>
+        <button mat-flat-button type="submit" [disabled]="control.invalid">
+          {{ data.confirm }}
+        </button>
       </mat-dialog-actions>
     </form>
   `,
-  styles: `mat-form-field { width: 100%; min-width: 260px; }`,
+  styles: `
+    mat-form-field {
+      width: 100%;
+      min-width: 260px;
+    }
+  `,
 })
 export class PromptDialog {
   protected readonly data = inject<PromptData>(MAT_DIALOG_DATA);

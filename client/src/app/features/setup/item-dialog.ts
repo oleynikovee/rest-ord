@@ -56,7 +56,14 @@ export interface ItemDialogData {
           <mat-form-field appearance="outline">
             <mat-label>Price</mat-label>
             <span matTextPrefix>$&nbsp;</span>
-            <input matInput type="number" inputmode="decimal" min="0" step="0.01" formControlName="price" />
+            <input
+              matInput
+              type="number"
+              inputmode="decimal"
+              min="0"
+              step="0.01"
+              formControlName="price"
+            />
             <mat-error>Enter a price from 0 to 10 000</mat-error>
           </mat-form-field>
         }
@@ -69,8 +76,15 @@ export interface ItemDialogData {
     </form>
   `,
   styles: `
-    .fields { display: flex; flex-direction: column; gap: 4px; min-width: min(420px, 80vw); }
-    mat-checkbox { margin-bottom: 8px; }
+    .fields {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: min(420px, 80vw);
+    }
+    mat-checkbox {
+      margin-bottom: 8px;
+    }
   `,
 })
 export class ItemDialog {
@@ -93,7 +107,10 @@ export class ItemDialog {
       validators: [Validators.required, Validators.pattern(/\S/)],
     }),
     description: new FormControl(this.initial.description, { nonNullable: true }),
-    categoryId: new FormControl(this.initial.categoryId, { nonNullable: true, validators: Validators.required }),
+    categoryId: new FormControl(this.initial.categoryId, {
+      nonNullable: true,
+      validators: Validators.required,
+    }),
     price: new FormControl<number | null>(
       this.initial.price === null ? null : this.initial.price / 100,
       [Validators.min(0), Validators.max(10000)],

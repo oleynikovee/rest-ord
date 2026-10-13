@@ -42,10 +42,16 @@
     border-radius: 50%;
     background: var(--mat-sys-outline);
   }
-  &.status-online .dot { background: #2e7d32; }
+  &.status-online .dot {
+    background: #2e7d32;
+  }
   &.status-reconnecting .dot,
-  &.status-connecting .dot { background: #ed6c02; }
-  &.status-offline .dot { background: var(--mat-sys-error); }
+  &.status-connecting .dot {
+    background: #ed6c02;
+  }
+  &.status-offline .dot {
+    background: var(--mat-sys-error);
+  }
 }
 
 .banner {

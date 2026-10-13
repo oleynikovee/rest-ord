@@ -27,8 +27,15 @@ import { MatIconModule } from '@angular/material/icon';
     </button>
   `,
   styles: `
-    :host { display: inline-flex; align-items: center; }
-    .value { min-width: 24px; text-align: center; font-variant-numeric: tabular-nums; }
+    :host {
+      display: inline-flex;
+      align-items: center;
+    }
+    .value {
+      min-width: 24px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
   `,
 })
 export class QuantityStepper {

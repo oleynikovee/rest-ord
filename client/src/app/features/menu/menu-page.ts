@@ -15,7 +15,11 @@ import type { MenuItem } from '../../core/models';
 import { MoneyPipe } from '../../shared/money.pipe';
 import { CartActions } from '../../store/cart/cart.actions';
 import { cartFeature } from '../../store/cart/cart.reducer';
-import { selectCartCount, selectQuantityByItem, selectTotal } from '../../store/cart/cart.selectors';
+import {
+  selectCartCount,
+  selectQuantityByItem,
+  selectTotal,
+} from '../../store/cart/cart.selectors';
 import { MenuActions } from '../../store/menu/menu.actions';
 import { menuFeature } from '../../store/menu/menu.reducer';
 import { selectCategories, selectMenuSections } from '../../store/menu/menu.selectors';
@@ -83,7 +87,12 @@ export class MenuPage {
         ? items.filter((item) => item.name.toLowerCase().includes(query))
         : items;
       if (matching.length === 0) continue;
-      rows.push({ kind: 'header', id: `h:${category.id}`, name: category.name, count: matching.length });
+      rows.push({
+        kind: 'header',
+        id: `h:${category.id}`,
+        name: category.name,
+        count: matching.length,
+      });
       for (const item of matching) rows.push({ kind: 'item', id: item.id, item });
     }
     return rows;

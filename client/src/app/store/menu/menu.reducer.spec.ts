@@ -12,15 +12,24 @@ describe('menu reducer', () => {
   );
 
   it('applies newer real-time updates and ignores stale ones', () => {
-    const newer = reducer(loaded, MenuLiveActions.itemUpserted({ item: menuItem({ price: 1500, version: 3 }) }));
+    const newer = reducer(
+      loaded,
+      MenuLiveActions.itemUpserted({ item: menuItem({ price: 1500, version: 3 }) }),
+    );
     expect(newer.items.entities['pizza']?.price).toBe(1500);
 
-    const stale = reducer(newer, MenuLiveActions.itemUpserted({ item: menuItem({ price: 900, version: 1 }) }));
+    const stale = reducer(
+      newer,
+      MenuLiveActions.itemUpserted({ item: menuItem({ price: 900, version: 1 }) }),
+    );
     expect(stale.items.entities['pizza']?.price).toBe(1500);
   });
 
   it('keeps live updates that are newer than a late snapshot', () => {
-    const live = reducer(loaded, MenuLiveActions.itemUpserted({ item: menuItem({ available: false, version: 5 }) }));
+    const live = reducer(
+      loaded,
+      MenuLiveActions.itemUpserted({ item: menuItem({ available: false, version: 5 }) }),
+    );
     const resynced = reducer(
       live,
       MenuActions.loadSuccess({ snapshot: { categories: [], items: [menuItem({ version: 4 })] } }),
@@ -30,7 +39,10 @@ describe('menu reducer', () => {
 
   it('updates optimistically and rolls back on failure', () => {
     const previous = loaded.items.entities['pizza']!;
-    const optimistic = reducer(loaded, SetupActions.updateItem({ previous, changes: { available: false } }));
+    const optimistic = reducer(
+      loaded,
+      SetupActions.updateItem({ previous, changes: { available: false } }),
+    );
     expect(optimistic.items.entities['pizza']?.available).toBe(false);
 
     const rolledBack = reducer(

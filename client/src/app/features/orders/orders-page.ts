@@ -30,7 +30,9 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
           <article class="order" [class.done]="order.status === 'COMPLETED'">
             <header>
               <h2>#{{ order.number }}</h2>
-              <time [attr.datetime]="order.createdAt">{{ order.createdAt | date: 'shortTime' }}</time>
+              <time [attr.datetime]="order.createdAt">{{
+                order.createdAt | date: 'shortTime'
+              }}</time>
               <span class="status" [class]="'status status-' + order.status" aria-live="polite">
                 {{ label(order.status) }}
               </span>
@@ -74,8 +76,15 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
     </div>
   `,
   styles: `
-    .page { max-width: 760px; margin: 0 auto; padding: 16px; }
-    h1 { font: var(--mat-sys-headline-small); margin: 8px 0 16px; }
+    .page {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    h1 {
+      font: var(--mat-sys-headline-small);
+      margin: 8px 0 16px;
+    }
     .order {
       display: flex;
       flex-direction: column;
@@ -86,10 +95,21 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
       background: var(--mat-sys-surface-container-low);
       border: 1px solid var(--mat-sys-outline-variant);
     }
-    .order.done { opacity: 0.75; }
-    header { display: flex; align-items: center; gap: 12px; }
-    h2 { margin: 0; font: var(--mat-sys-title-medium); }
-    time { color: var(--mat-sys-on-surface-variant); }
+    .order.done {
+      opacity: 0.75;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    h2 {
+      margin: 0;
+      font: var(--mat-sys-title-medium);
+    }
+    time {
+      color: var(--mat-sys-on-surface-variant);
+    }
     .status {
       margin-left: auto;
       padding: 4px 10px;
@@ -99,13 +119,38 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
       color: var(--mat-sys-on-secondary-container);
       transition: background-color 300ms;
     }
-    .status-COOKING { background: var(--mat-sys-tertiary-container); color: var(--mat-sys-on-tertiary-container); }
-    .status-READY { background: #c8e6c9; color: #1b5e20; }
-    .status-COMPLETED { background: var(--mat-sys-surface-container-highest); color: var(--mat-sys-on-surface-variant); }
-    .lines { list-style: none; margin: 0; padding: 0; }
-    .lines li { display: flex; justify-content: space-between; gap: 12px; padding: 2px 0; }
-    footer { display: flex; justify-content: flex-end; align-items: baseline; gap: 12px; }
-    .discount { color: var(--mat-sys-on-surface-variant); }
+    .status-COOKING {
+      background: var(--mat-sys-tertiary-container);
+      color: var(--mat-sys-on-tertiary-container);
+    }
+    .status-READY {
+      background: #c8e6c9;
+      color: #1b5e20;
+    }
+    .status-COMPLETED {
+      background: var(--mat-sys-surface-container-highest);
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .lines {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .lines li {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 2px 0;
+    }
+    footer {
+      display: flex;
+      justify-content: flex-end;
+      align-items: baseline;
+      gap: 12px;
+    }
+    .discount {
+      color: var(--mat-sys-on-surface-variant);
+    }
   `,
 })
 export class OrdersPage {

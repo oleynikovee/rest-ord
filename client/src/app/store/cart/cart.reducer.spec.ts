@@ -15,7 +15,9 @@ describe('cart reducer', () => {
       CartActions.addItem({ item: pizza, quantity: 1 }),
       CartActions.addItem({ item: pizza, quantity: 2 }),
     );
-    expect(state.lines).toEqual([expect.objectContaining({ itemId: 'pizza', quantity: 3, unitPrice: 1000 })]);
+    expect(state.lines).toEqual([
+      expect.objectContaining({ itemId: 'pizza', quantity: 3, unitPrice: 1000 }),
+    ]);
   });
 
   it('keeps one line per entered price for open-price items', () => {
@@ -45,7 +47,10 @@ describe('cart reducer', () => {
     );
     expect(state.checkoutKey).toBe('first-key');
 
-    state = reducer(state, CartActions.checkoutFailure({ error: { status: 0, code: 'NETWORK', message: '' } }));
+    state = reducer(
+      state,
+      CartActions.checkoutFailure({ error: { status: 0, code: 'NETWORK', message: '' } }),
+    );
     state = reducer(state, CartActions.checkout({ key: 'second-key' }));
     expect(state.checkoutKey).toBe('first-key');
 

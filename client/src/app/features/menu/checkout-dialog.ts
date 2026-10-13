@@ -82,14 +82,39 @@ import { describeProblem } from './cart-problem';
       border-radius: 12px;
       background: var(--mat-sys-error-container);
       color: var(--mat-sys-on-error-container);
-      ul { margin: 8px 0 0; padding-left: 20px; }
+      ul {
+        margin: 8px 0 0;
+        padding-left: 20px;
+      }
     }
-    .summary { list-style: none; padding: 0; margin: 0 0 8px; }
-    .summary li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; }
-    .totals { display: grid; grid-template-columns: 1fr auto; row-gap: 4px; margin: 0; }
-    .totals dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
-    .grand { font: var(--mat-sys-title-medium); }
-    mat-spinner { display: inline-block; }
+    .summary {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 8px;
+    }
+    .summary li {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 4px 0;
+    }
+    .totals {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      row-gap: 4px;
+      margin: 0;
+    }
+    .totals dd {
+      margin: 0;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .grand {
+      font: var(--mat-sys-title-medium);
+    }
+    mat-spinner {
+      display: inline-block;
+    }
   `,
 })
 export class CheckoutDialog {

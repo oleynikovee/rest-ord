@@ -30,7 +30,12 @@ import { connectionFeature } from './store/connection/connection.reducer';
       </a>
       <nav class="nav" aria-label="Main">
         <a mat-button routerLink="/menu" routerLinkActive="active">
-          <span [matBadge]="cartCount() || null" [matBadgeDescription]="cartCount() + ' items in cart'" matBadgeOverlap="false">Menu</span>
+          <span
+            [matBadge]="cartCount() || null"
+            [matBadgeDescription]="cartCount() + ' items in cart'"
+            matBadgeOverlap="false"
+            >Menu</span
+          >
         </a>
         <a mat-button routerLink="/orders" routerLinkActive="active">Orders</a>
         <a mat-button routerLink="/setup" routerLinkActive="active">Setup</a>

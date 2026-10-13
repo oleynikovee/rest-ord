@@ -54,7 +54,9 @@ export const checkout = createEffect(
             },
           }),
           map((order) => CartActions.checkoutSuccess({ order })),
-          catchError((error: unknown) => of(CartActions.checkoutFailure({ error: toApiError(error) }))),
+          catchError((error: unknown) =>
+            of(CartActions.checkoutFailure({ error: toApiError(error) })),
+          ),
         );
       }),
     ),
@@ -80,11 +82,7 @@ export const syncMenuFromCheckoutIssues = createEffect(
 );
 
 export const notifyCheckout = createEffect(
-  (
-    actions$ = inject(Actions),
-    notify = inject(NotifyService),
-    router = inject(Router),
-  ) =>
+  (actions$ = inject(Actions), notify = inject(NotifyService), router = inject(Router)) =>
     actions$.pipe(
       ofType(CartActions.checkoutSuccess, CartActions.checkoutFailure),
       tap((action) => {

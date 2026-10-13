@@ -16,7 +16,13 @@ export interface OpenPriceResult {
 @Component({
   selector: 'app-open-price-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule],
+  imports: [
+    ReactiveFormsModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+  ],
   template: `
     <h2 mat-dialog-title>{{ item.name }}</h2>
     <form [formGroup]="form" (ngSubmit)="submit()">
@@ -25,14 +31,30 @@ export interface OpenPriceResult {
         <mat-form-field appearance="outline">
           <mat-label>Price</mat-label>
           <span matTextPrefix>$&nbsp;</span>
-          <input matInput type="number" inputmode="decimal" min="0.01" step="0.01" formControlName="price" cdkFocusInitial />
+          <input
+            matInput
+            type="number"
+            inputmode="decimal"
+            min="0.01"
+            step="0.01"
+            formControlName="price"
+            cdkFocusInitial
+          />
           @if (form.controls.price.hasError('min') || form.controls.price.hasError('required')) {
             <mat-error>Enter a price greater than 0</mat-error>
           }
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Quantity</mat-label>
-          <input matInput type="number" inputmode="numeric" min="1" max="99" step="1" formControlName="quantity" />
+          <input
+            matInput
+            type="number"
+            inputmode="numeric"
+            min="1"
+            max="99"
+            step="1"
+            formControlName="quantity"
+          />
           @if (form.controls.quantity.invalid) {
             <mat-error>From 1 to 99</mat-error>
           }
@@ -45,8 +67,13 @@ export interface OpenPriceResult {
     </form>
   `,
   styles: `
-    mat-form-field { width: 100%; }
-    .hint { margin-top: 0; color: var(--mat-sys-on-surface-variant); }
+    mat-form-field {
+      width: 100%;
+    }
+    .hint {
+      margin-top: 0;
+      color: var(--mat-sys-on-surface-variant);
+    }
   `,
 })
 export class OpenPriceDialog {
@@ -54,7 +81,11 @@ export class OpenPriceDialog {
   private readonly ref = inject<MatDialogRef<OpenPriceDialog, OpenPriceResult>>(MatDialogRef);
 
   protected readonly form = new FormGroup({
-    price: new FormControl<number | null>(null, [Validators.required, Validators.min(0.01), Validators.max(10000)]),
+    price: new FormControl<number | null>(null, [
+      Validators.required,
+      Validators.min(0.01),
+      Validators.max(10000),
+    ]),
     quantity: new FormControl(1, {
       nonNullable: true,
       validators: [Validators.required, Validators.min(1), Validators.max(99)],

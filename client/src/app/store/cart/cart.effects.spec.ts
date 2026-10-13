@@ -28,7 +28,16 @@ describe('cart effects', () => {
             cart: {
               ...emptyCart,
               checkoutKey: 'key-12345678',
-              lines: [{ lineId: 'pizza', itemId: 'pizza', name: 'Pizza', unitPrice: 1000, openPrice: false, quantity: 1 }],
+              lines: [
+                {
+                  lineId: 'pizza',
+                  itemId: 'pizza',
+                  name: 'Pizza',
+                  unitPrice: 1000,
+                  openPrice: false,
+                  quantity: 1,
+                },
+              ],
             },
           },
         }),
@@ -108,6 +117,9 @@ describe('cart effects', () => {
         },
       }),
     );
-    expect((await result).map((a) => a.type)).toEqual(['[Menu Live] Item Upserted', '[Menu Live] Item Deleted']);
+    expect((await result).map((a) => a.type)).toEqual([
+      '[Menu Live] Item Upserted',
+      '[Menu Live] Item Deleted',
+    ]);
   });
 });

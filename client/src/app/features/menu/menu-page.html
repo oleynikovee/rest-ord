@@ -4,12 +4,22 @@
       <mat-form-field appearance="outline" class="search" subscriptSizing="dynamic">
         <mat-icon matPrefix aria-hidden="true">search</mat-icon>
         <mat-label>Search dishes</mat-label>
-        <input matInput type="search" [value]="search()" (input)="search.set($any($event.target).value)" />
+        <input
+          matInput
+          type="search"
+          [value]="search()"
+          (input)="search.set($any($event.target).value)"
+        />
       </mat-form-field>
       <mat-chip-listbox class="chips" aria-label="Categories" hideSingleSelectionIndicator>
-        <mat-chip-option [selected]="categoryId() === null" (click)="selectCategory(null)">All</mat-chip-option>
+        <mat-chip-option [selected]="categoryId() === null" (click)="selectCategory(null)"
+          >All</mat-chip-option
+        >
         @for (category of categories(); track category.id) {
-          <mat-chip-option [selected]="categoryId() === category.id" (click)="selectCategory(category.id)">
+          <mat-chip-option
+            [selected]="categoryId() === category.id"
+            (click)="selectCategory(category.id)"
+          >
             {{ category.name }}
           </mat-chip-option>
         }
@@ -20,10 +30,20 @@
       @if (rows().length === 0) {
         <p class="empty">Nothing found. Try another search or category.</p>
       } @else {
-        <cdk-virtual-scroll-viewport class="viewport" [itemSize]="rowHeight" minBufferPx="400" maxBufferPx="800">
-          <div *cdkVirtualFor="let row of rows(); trackBy: trackRow; templateCacheSize: 40" class="row">
+        <cdk-virtual-scroll-viewport
+          class="viewport"
+          [itemSize]="rowHeight"
+          minBufferPx="400"
+          maxBufferPx="800"
+        >
+          <div
+            *cdkVirtualFor="let row of rows(); trackBy: trackRow; templateCacheSize: 40"
+            class="row"
+          >
             @if (row.kind === 'header') {
-              <h2 class="section">{{ row.name }} <span class="count">{{ row.count }}</span></h2>
+              <h2 class="section">
+                {{ row.name }} <span class="count">{{ row.count }}</span>
+              </h2>
             } @else {
               <app-menu-item-row
                 [item]="row.item"

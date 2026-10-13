@@ -38,7 +38,13 @@ import { CheckoutDialog } from './checkout-dialog';
     <header class="header">
       <h2>Your order</h2>
       @if (closable()) {
-        <button mat-icon-button type="button" class="close" (click)="closed.emit()" aria-label="Close cart">
+        <button
+          mat-icon-button
+          type="button"
+          class="close"
+          (click)="closed.emit()"
+          aria-label="Close cart"
+        >
           <mat-icon>close</mat-icon>
         </button>
       }
@@ -137,7 +143,9 @@ export class CartPanel {
   protected readonly canCheckout = this.store.selectSignal(selectCanCheckout);
   private readonly items = this.store.selectSignal(selectItemEntities);
 
-  protected readonly discountInput = computed(() => (this.discount() ? this.discount() / 100 : null));
+  protected readonly discountInput = computed(() =>
+    this.discount() ? this.discount() / 100 : null,
+  );
   protected readonly describe = describeProblem;
 
   protected setQuantity(lineId: string, quantity: number): void {
@@ -147,13 +155,17 @@ export class CartPanel {
   protected setDiscount(value: number | string | null): void {
     const amount = Number(value);
     this.store.dispatch(
-      CartActions.setDiscount({ discount: Number.isFinite(amount) && amount > 0 ? toCents(amount) : 0 }),
+      CartActions.setDiscount({
+        discount: Number.isFinite(amount) && amount > 0 ? toCents(amount) : 0,
+      }),
     );
   }
 
   protected applyChanges(): void {
     const items = this.items();
-    const relevant = Object.fromEntries(this.lines().map((line) => [line.itemId, items[line.itemId]]));
+    const relevant = Object.fromEntries(
+      this.lines().map((line) => [line.itemId, items[line.itemId]]),
+    );
     this.store.dispatch(CartActions.applyMenuChanges({ items: relevant }));
   }
 

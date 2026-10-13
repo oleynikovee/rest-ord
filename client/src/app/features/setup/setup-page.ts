@@ -124,7 +124,11 @@ export class SetupPage {
 
   protected deleteItem(item: MenuItem): void {
     this.confirm(
-      { title: `Delete “${item.name}”?`, message: 'It disappears from the menu immediately.', confirm: 'Delete' },
+      {
+        title: `Delete “${item.name}”?`,
+        message: 'It disappears from the menu immediately.',
+        confirm: 'Delete',
+      },
       () => this.store.dispatch(SetupActions.deleteItem({ id: item.id })),
     );
   }

@@ -71,7 +71,9 @@ cdk-virtual-scroll-viewport.viewport {
   height: 72px;
   padding: 12px 16px;
   box-sizing: border-box;
-  .skeleton { height: 100%; }
+  .skeleton {
+    height: 100%;
+  }
 }
 
 .empty {
