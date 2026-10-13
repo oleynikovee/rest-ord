@@ -62,6 +62,14 @@ export class MemoryEventLog extends EventLog {
     return () => this.listeners.delete(listener);
   }
 
+  async pendingStats(): Promise<{ pending: number; oldestAgeSeconds: number }> {
+    const pending = this.entries.filter((e) => !e.published);
+    return {
+      pending: pending.length,
+      oldestAgeSeconds: pending[0] ? (Date.now() - pending[0].at) / 1000 : 0,
+    };
+  }
+
   async prune(olderThanMs: number): Promise<number> {
     const threshold = Date.now() - olderThanMs;
     let removed = 0;

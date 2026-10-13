@@ -10,6 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { APP_CONFIG, type AppConfig } from '../config.js';
 import type { Role, User, UserRecord } from '../domain/models.js';
 import { UsersRepository } from '../domain/ports.js';
+import { MetricsService } from '../observability/metrics.service.js';
 import type { SessionPayload } from './auth.types.js';
 import { hashPassword, verifyPassword } from './password.js';
 
@@ -27,6 +28,7 @@ export class AuthService implements OnApplicationBootstrap {
     private readonly users: UsersRepository,
     private readonly jwt: JwtService,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
+    private readonly metrics: MetricsService,
   ) {}
 
   /** Runs after storage is initialised: makes sure the demo accounts exist. */
@@ -57,6 +59,7 @@ export class AuthService implements OnApplicationBootstrap {
   async login(email: string, password: string): Promise<User> {
     const user = await this.users.findByEmail(email);
     const valid = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
+    this.metrics.logins.inc({ result: user && valid ? 'success' : 'failure' });
     if (!user || !valid) {
       // One message for both cases: do not reveal which emails are registered.
       throw new UnauthorizedException({

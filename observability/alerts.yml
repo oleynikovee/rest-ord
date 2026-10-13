@@ -1,0 +1,48 @@
+groups:
+  - name: trattoria
+    rules:
+      - alert: ApiInstanceDown
+        expr: up{job="trattoria-api"} == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: 'API instance {{ $labels.instance }} is not responding to scrapes'
+
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_server_request_duration_seconds_count{status=~"5.."}[5m]))
+            / clamp_min(sum(rate(http_server_request_duration_seconds_count[5m])), 1e-9) > 0.05
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: 'More than 5% of API requests fail with 5xx'
+
+      - alert: SlowApi
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(http_server_request_duration_seconds_bucket[5m]))) > 1
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: 'p95 API latency is above 1 s'
+
+      # Events are committed but not reaching clients: live updates are delayed.
+      - alert: OutboxStuck
+        expr: max(outbox_oldest_pending_age_seconds) > 30
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: 'Oldest unpublished event is {{ $value | humanizeDuration }} old'
+
+      - alert: CheckoutRejectionsSpike
+        expr: sum(rate(checkout_rejections_total[10m])) > 0.2
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: 'Many checkouts are refused (menu changes or promo codes): check recent menu edits'
+
+      - alert: LoginFailuresSpike
+        expr: sum(rate(auth_logins_total{result="failure"}[5m])) > 1
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: 'Unusual number of failed sign-ins (possible credential stuffing)'

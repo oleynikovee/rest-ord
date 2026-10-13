@@ -115,6 +115,14 @@ export class PgEventLog extends EventLog {
     return () => this.listeners.delete(listener);
   }
 
+  async pendingStats(): Promise<{ pending: number; oldestAgeSeconds: number }> {
+    const { rows } = await this.db.pool.query<{ pending: string; age: number | null }>(
+      `SELECT count(*) AS pending, extract(epoch FROM now() - min(created_at))::float AS age
+       FROM outbox WHERE published_at IS NULL`,
+    );
+    return { pending: Number(rows[0]?.pending ?? 0), oldestAgeSeconds: rows[0]?.age ?? 0 };
+  }
+
   async prune(olderThanMs: number): Promise<number> {
     const { rowCount } = await this.db.pool.query(
       `DELETE FROM outbox

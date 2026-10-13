@@ -19,6 +19,7 @@ import {
   OrdersRepository,
 } from '../domain/ports.js';
 import type { CreateOrderDto } from './orders.dto.js';
+import { MetricsService } from '../observability/metrics.service.js';
 import { PromoService } from '../promo/promo.service.js';
 import { priceOrder } from './pricing.js';
 
@@ -37,6 +38,7 @@ export class OrdersService {
     private readonly menu: MenuRepository,
     private readonly idempotency: IdempotencyStore,
     private readonly promos: PromoService,
+    private readonly metrics: MetricsService,
   ) {}
 
   /** Admins see every order, customers only their own. */
@@ -136,8 +138,12 @@ export class OrdersService {
       await this.idempotency.complete(idempotencyKey, order.id);
       // Its event was written in the same transaction; the outbox relay broadcasts it.
       this.logger.log(`Order #${order.number} placed, total ${order.total}`);
+      this.metrics.ordersPlaced.inc({ promo: order.promoCode ? 'yes' : 'no' });
+      this.metrics.orderRevenue.inc(order.total);
       return { order, replayed: false };
     } catch (error) {
+      const reason = (error as { response?: { code?: unknown } }).response?.code;
+      if (typeof reason === 'string') this.metrics.checkoutRejections.inc({ reason });
       // Free the key so the user can fix the cart and retry with the same key.
       await this.idempotency.release(idempotencyKey).catch(() => undefined);
       throw error;

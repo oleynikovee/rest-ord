@@ -12,6 +12,7 @@ import { AuthService } from '../auth/auth.service.js';
 import { SESSION_COOKIE } from '../auth/auth.types.js';
 import { type EventEnvelope, SOCKET_EVENTS, TOPICS } from '../domain/models.js';
 import { EventBus } from '../domain/ports.js';
+import { MetricsService } from '../observability/metrics.service.js';
 
 const ADMINS_ROOM = 'role:admin';
 const userRoom = (userId: string): string => `user:${userId}`;
@@ -38,6 +39,7 @@ export class RealtimeGateway
   constructor(
     private readonly bus: EventBus,
     private readonly auth: AuthService,
+    private readonly metrics: MetricsService,
   ) {}
 
   afterInit(): void {
@@ -56,6 +58,7 @@ export class RealtimeGateway
   }
 
   async handleConnection(client: Socket): Promise<void> {
+    this.metrics.socketConnections.inc();
     const token = parseCookie(client.handshake.headers.cookie ?? '')[SESSION_COOKIE];
     const user = token ? await this.auth.verifyToken(token) : null;
     if (user) {
@@ -67,6 +70,7 @@ export class RealtimeGateway
   }
 
   handleDisconnect(): void {
+    this.metrics.socketConnections.dec();
     this.logger.debug(`Client disconnected (${this.server.engine.clientsCount} online)`);
   }
 

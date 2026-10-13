@@ -1,6 +1,7 @@
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import {
   type ApplicationConfig,
+  ErrorHandler,
   inject,
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
@@ -10,6 +11,7 @@ import { MatIconRegistry } from '@angular/material/icon';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth.interceptor';
+import { ErrorReporter, ReportingErrorHandler } from './core/error-reporter';
 import { provideAppStore } from './store';
 
 export const appConfig: ApplicationConfig = {
@@ -20,8 +22,11 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
     provideAppStore(),
+    { provide: ErrorHandler, useClass: ReportingErrorHandler },
     provideAppInitializer(() => {
       inject(MatIconRegistry).setDefaultFontSetClass('material-symbols-outlined');
+      // Not awaited: error reporting must not delay the first render.
+      void inject(ErrorReporter).init();
     }),
   ],
 };

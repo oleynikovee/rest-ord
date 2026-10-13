@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import type { EventEnvelope } from '../domain/models.js';
 import { EventBus, EventLog } from '../domain/ports.js';
+import { MetricsService } from '../observability/metrics.service.js';
 
 const BATCH_SIZE = 100;
 /** Fallback when a notification is missed; LISTEN/NOTIFY normally wakes the relay at once. */
@@ -32,6 +33,7 @@ export class OutboxRelay implements OnApplicationBootstrap, OnApplicationShutdow
   constructor(
     private readonly log: EventLog,
     private readonly bus: EventBus,
+    private readonly metrics: MetricsService,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -83,8 +85,9 @@ export class OutboxRelay implements OnApplicationBootstrap, OnApplicationShutdow
     void this.drain();
   }
 
-  private publish(event: EventEnvelope): Promise<void> {
-    return this.bus.publish(event.topic, event);
+  private async publish(event: EventEnvelope): Promise<void> {
+    await this.bus.publish(event.topic, event);
+    this.metrics.eventsPublished.inc();
   }
 
   private async prune(): Promise<void> {

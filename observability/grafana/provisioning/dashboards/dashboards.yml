@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: trattoria
+    folder: Trattoria
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

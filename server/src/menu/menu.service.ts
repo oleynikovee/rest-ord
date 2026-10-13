@@ -6,6 +6,7 @@ import {
   PreconditionFailedException,
 } from '@nestjs/common';
 import type { Category, MenuItem, MenuSnapshot } from '../domain/models.js';
+import { MetricsService } from '../observability/metrics.service.js';
 import {
   MenuRepository,
   type MenuItemInput,
@@ -21,7 +22,10 @@ import type {
 @Injectable()
 export class MenuService {
   /** Events are written by the repository together with each change (transactional outbox). */
-  constructor(private readonly menu: MenuRepository) {}
+  constructor(
+    private readonly menu: MenuRepository,
+    private readonly metrics: MetricsService,
+  ) {}
 
   getSnapshot(): Promise<MenuSnapshot> {
     return this.menu.getSnapshot();
@@ -108,7 +112,10 @@ export class MenuService {
     notFound: () => NotFoundException,
   ): T {
     if (!current) throw notFound();
-    if (current.version !== expectedVersion) throw versionConflict(current);
+    if (current.version !== expectedVersion) {
+      this.metrics.versionConflicts.inc();
+      throw versionConflict(current);
+    }
     return current;
   }
 
@@ -119,6 +126,7 @@ export class MenuService {
       case 'not_found':
         throw notFound();
       case 'conflict':
+        this.metrics.versionConflicts.inc();
         throw versionConflict(result.current);
     }
   }

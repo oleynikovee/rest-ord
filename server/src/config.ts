@@ -9,6 +9,17 @@ export interface AppConfig {
   /** Built Angular app to serve as static files (production / Docker). */
   clientDist?: string;
   auth: AuthConfig;
+  /** Internal port for Prometheus `/metrics`; 0 disables it. */
+  metricsPort: number;
+  /** Values the browser app needs at runtime (served by GET /api/config). */
+  client: ClientConfig;
+}
+
+export interface ClientConfig {
+  /** Sentry DSN for the browser (public by design); `null` disables error reporting. */
+  sentryDsn: string | null;
+  environment: string;
+  release: string | null;
 }
 
 export interface AuthConfig {
@@ -30,6 +41,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     redisUrl: env.REDIS_URL || undefined,
     statusStepMs: Number(env.STATUS_STEP_SECONDS ?? 8) * 1000,
     clientDist: env.CLIENT_DIST || undefined,
+    metricsPort: Number(env.METRICS_PORT ?? 9464),
+    client: {
+      sentryDsn: env.SENTRY_DSN_CLIENT || null,
+      environment: env.SENTRY_ENVIRONMENT ?? env.NODE_ENV ?? 'development',
+      release: env.APP_VERSION || null,
+    },
     auth: {
       jwtSecret: env.JWT_SECRET || undefined,
       sessionTtlSeconds: Number(env.SESSION_TTL_HOURS ?? 12) * 3600,

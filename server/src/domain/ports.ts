@@ -148,6 +148,8 @@ export abstract class EventLog {
   abstract tryLead(): Promise<boolean>;
   /** Calls `listener` soon after new events are committed. Returns an unsubscribe function. */
   abstract onAppended(listener: () => void): () => void;
+  /** For monitoring: how many events wait for the relay, and for how long the oldest one. */
+  abstract pendingStats(): Promise<{ pending: number; oldestAgeSeconds: number }>;
   /** Deletes published events older than `olderThanMs`; returns how many. */
   abstract prune(olderThanMs: number): Promise<number>;
   abstract close(): Promise<void>;

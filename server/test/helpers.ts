@@ -16,6 +16,7 @@ export async function createTestApp(): Promise<INestApplication<App>> {
     ADMIN_PASSWORD: ADMIN.password,
     JWT_SECRET: 'test-secret',
     STATUS_STEP_SECONDS: '0',
+    METRICS_PORT: '0',
   });
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule.forRoot(config)],
