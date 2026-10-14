@@ -15,11 +15,6 @@ yarn-error.log
 .settings/
 *.sublime-workspace
 
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
 !.vscode/mcp.json
 .history/*
 
